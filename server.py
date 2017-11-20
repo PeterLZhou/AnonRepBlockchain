@@ -1,5 +1,6 @@
 import socket
 import threading
+from client import Client
 
 #We hardcode all the available ports to make things easy
 ALL_PORTS = [5000, 5001, 5002]
@@ -12,7 +13,8 @@ class Server():
         self.receivesocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
         self.MY_IP = "0.0.0.0"
         self.MY_PORT = 5000
-        self.MESSAGES = []
+        self.MY_MESSAGES = []
+        self.MY_CLIENTS = {}
         offset = 0
         connected = False
         while not connected:
@@ -28,17 +30,22 @@ class Server():
         while True:
             data, addr = self.receivesocket.recvfrom(1024) # buffer size is 1024 bytes
             data = data.decode()
-            self.MESSAGES.append(data)
+            self.MY_MESSAGES.append(data)
             print("I got it: ", data)
 
     # Send a message to every port which is not yourself
     def sendall(self):
         message = "TEST MESSAGE"
-        self.MESSAGES.append(message)
+        self.MY_MESSAGES.append(message)
         for port in ALL_PORTS:
             if port != self.MY_PORT:
                 self.sendsocket.sendto(message.encode(), (self.MY_IP, port))
 
     def dump(self):
-        for message in self.MESSAGES:
+        for message in self.MY_MESSAGES:
             print(message)
+
+    def newclient(self):
+        new_client = Client()
+        self.MY_CLIENTS[new_client.client_id] = new_client
+        print("Client {} added".format(new_client.client_id))

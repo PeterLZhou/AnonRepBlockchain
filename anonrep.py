@@ -23,3 +23,5 @@ while True:
         my_server.sendall()
     elif command == 'dump':
     	my_server.dump()
+    elif command == 'newclient':
+    	my_server.newclient()
