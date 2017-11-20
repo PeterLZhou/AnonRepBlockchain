@@ -13,7 +13,13 @@ threading1.start()
 
 # User input
 while True:
-    command = input("> ")
+    try:
+    	command = input("> ")
+    except KeyboardInterrupt:
+    	print("quitting")
+    	quit()
     # Sends a message to every other server
     if command == 'sendall':
         my_server.sendall()
+    elif command == 'dump':
+    	my_server.dump()
