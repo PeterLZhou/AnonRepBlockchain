@@ -2,26 +2,65 @@ import socket
 import threading
 import uuid
 from random import *
+from ledger import Ledger
 
 class Client():
     def __init__(self, clientid):
+        # I imagined wallets to be a list of dictionaries and each dictionary would have the following:
+        # {
+        #    "PrivateKey": the key that will be used to sign new messages
+        #    "PublicKey": the public key of the wallet
+        #    "Reputation": the amount of reputation that the wallet has
+        # maybe we want to add another item in here for the wallet's identity
+        # }
         self.wallets = dict()
         # Client ID is just the ID of the port it's on, since we only have 1 client/port
         self.client_id = clientid
         # Long standing private key
+        # I think we're going to need a list of private keys that correspond to the individual wallets
         self.private_key = uuid.uuid4().hex
+
+        self.threshold = 1 # the maximum amount of reputation a wallet is allowed to have
+
+        self.my_ledger = Ledger()
 
     # Called by the server, returns a tuple of two new public keys for the wallet
     def split(self, walletid):
+
+        # I'm assuming that walletid is the oldwallet that needs to be split
+        # maybe we should be looping through all the wallets that the client has and calling a split on all of them
         oldwallet = None #TODO @Eugine - once you figure createwallet out find out how to get the wallet by reference
-        newwallet1 = self.createwallet()
-        newwallet2 = self.createwallet()
-        # TODO: Split currency among the new wallets
-        del wallets[oldwallet]
-        return (newwallet1, newwallet2)
+        new_wallets = []
+
+        # do some kind of signing with the privatekey of the oldwallet
+        signed_oldwallet = oldwallet["PrivateKey"] # we obviously do NOT want to send the private key
+        while oldwallet['Reputation'] > self.threshold:
+            newwallet = self.createwallet()
+            # TODO: Split currency among the new wallets
+
+            # transfer threshold reputation points from oldwallet to newwallet
+            self.my_ledger.send_reputation(signed_oldwallet, newwallet["PublicKey"], self.threshold)
+            newwallet["Reputation"] += self.threshold
+            new_wallets.append(newwallet)
+
+        return new_wallets
+        # return (newwallet1, newwallet2)
 
     # Adds the wallet to the dictionary. Returns the key for the wallet in the dict
     def createwallet(self):
         # TODO @Eugine: Add in crypto code for initializing wallets - the way I
         # imagined it was a mapping of either publickey/privatekey/address to currency amt
-        print("Not implemented")
+        # maybe we can have currency be determined elsewhere
+
+        # 1. make private and public key and maybe some ID
+        privatekey = None
+        publickey = None
+        reputation = 0
+
+        wallet = {
+            "PrivateKey": privatekey,
+            "PublicKey": publickey,
+            "Reputation": reputation
+        }
+
+        return wallet

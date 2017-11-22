@@ -1,6 +1,7 @@
 import socket
 import threading
 from client import Client
+from ledger import Ledger
 
 #We hardcode all the available ports to make things easy
 ALL_PORTS = [5000, 5001, 5002]
@@ -37,6 +38,9 @@ class Server():
         # Everyone has their own log of messages, every time we get a message append to log
         self.MY_MESSAGES = {}
 
+        ### LEDGER CREATION ###
+        ### we can have the ledgers be in just the clients or just the servers or both
+        self.MY_LEDGER = Ledger()
 
     def listen(self):
         while True:
