@@ -1,3 +1,4 @@
+
 import socket
 import threading
 from server import Server
@@ -19,9 +20,26 @@ while True:
     	print("quitting")
     	quit()
     # Sends a message to every other server
-    if command == 'sendall':
+    args = command.split()
+    if args[0] == 'sendall':
         my_server.sendall()
-    elif command == 'dump':
-    	my_server.dump()
-    elif command == 'newclient':
-    	my_server.newclient()
+    elif args[0] == 'broadcast':
+    	my_server.broadcastmessages()
+    ### MESSAGING COMMANDS ###
+    # message <client_id (or one time pseudonym?)> <message (arbitrarily long with spaces)>
+    elif args[0] == 'postmessage':
+        client_id = args[1]
+        message = args[2:].join(' ')
+        my_server.postmessage(client_id, message)
+    ### VOTING COMMANDS ###
+    # upvote/downvote <client_id> <message_id>
+    elif args[0] == 'upvote':
+        client_id = args[1]
+        message_id = args[2]
+        my_server.upvote(client_id, message_id)
+    elif args[0] == 'downvote':
+        client_id = args[1]
+        message_id = args[2]
+        my_server.downvote(client_id, message_id)
+    elif args[0] == 'newclient':
+        my_server.newclient()
