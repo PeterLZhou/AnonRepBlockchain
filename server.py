@@ -47,6 +47,8 @@ class Server():
             data, addr = self.receivesocket.recvfrom(1024) # buffer size is 1024 bytes
             data = data.decode()
             self.MY_MESSAGES.append(data)
+            # we need to classify the different types of messages that the server's going to receive
+            # are we just going to send jank strings or try to send dictionaries?
             print("I got it: ", data)
 
     # Send a message to every port which is not yourself
@@ -89,3 +91,16 @@ class Server():
     def downvote(self, client_id, message_id):
         # TODO: Linkable ring signature + downvote
         print("nope")
+
+    # We probably need to classify all the messages that we'll be receiving
+
+    def received_posted_message(self, message):
+        print("not yet implemented")
+    def received_voting_message(self, message):
+        print("not yet implemented")
+    def received_ledger_update(self, message):
+        print("not yet implemented")
+        # there will be different reasons for the ledger being updated:
+        # - received a broadcast to update the ledger
+        # - received a broadcast to propose a change to the ledger
+        # -----> would then need to try to get a signature for the proposed block

@@ -40,6 +40,7 @@ class Ledger:
 
     def sign_block(self, new_block):
         '''
+            should be called by the server so that the results can be broadcasted 
             We can make this signing as easy as possible
         '''
         signature = None
