@@ -6,6 +6,8 @@ class Ledger:
                 "Sender": pseudonym or ID of the user that is sending the reputation points
                 "Receiver": pseudonym or ID of the user that is receiving the reputation points
                 "Points": the amount of reputation points that is being sent
+                "Signature": the signature that verifies the block has not be tampered with 
+                            signature is none if the block is in the awaiting list
             }
         '''
         self.blocks = []
@@ -13,7 +15,7 @@ class Ledger:
 
     def send_reputation(self, sender, receiver, amount):
         '''
-
+            used for splitting wallets
         '''
         new_block = {
             "Sender": sender,
@@ -24,6 +26,7 @@ class Ledger:
 
     def propose_block(self, new_block):
         # verify that the transaction of the block is legal by looking at the history of the chain
+        # returns True if the transaction is legal, False otherwise
         sender_value = 0
         for block in self.blocks:
             if block["Sender"] == new_block["Sender"]:
@@ -45,6 +48,15 @@ class Ledger:
         '''
         signature = None
         return signature
+
+    def process_ledger(self, new_ledger):
+        ''' decide if new ledger is more up to date than current ledger
+        '''
+        # decide whether or not new_ledger is more up-to-date, i.e. it's longer
+        # verify that all the new ledger is secure based on the sigatures
+        self.blocks = new_ledger.blocks
+        self.awaiting = new_ledger.awaiting
+        pass
 
     def _verify_signature(self, new_block, signature):
         '''

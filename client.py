@@ -16,19 +16,24 @@ class Client():
         self.wallets = []
 
         # start with 1 wallet with reputation=1 (feel free to change this)
-        self.wallets.append(self.createwallet())
+        first_wallet = self .createwallet()
+        first_wallet["Reputation"] = 1
+        # maybe we want to publish to the ledger? it's not an important issue, but we want to make sure that we can't just create random wallets out of nowhere
+        self.wallets.append(first_wallet)
 
         # Client ID is just the ID of the port it's on, since we only have 1 client/port
         self.client_id = clientid
         # Long standing private key
         # I think we're going to need a list of private keys that correspond to the individual wallets
-        self.private_key = uuid.uuid4().hex
+        # ^that should be taken care of by self.wallets 
+        self.private_key = uuid.uuid4().hex # is this private key used for the voting process?
 
         self.threshold = 1 # the maximum amount of reputation a wallet is allowed to have
 
         self.my_ledger = Ledger()
 
-    # Called by the server, returns a tuple of two new public keys for the wallet
+    # Called by the server, returns a list of new wallets
+    # the private keys will be kept by the client, but the public keys will be shared with the server
     def split(self, walletid):
 
         # I'm assuming that walletid is the oldwallet that needs to be split
@@ -44,12 +49,12 @@ class Client():
 
             # transfer threshold reputation points from oldwallet to newwallet
             self.my_ledger.send_reputation(signed_oldwallet, newwallet["PublicKey"], self.threshold)
+            # make sure that the server is publishing/broadcasting the new updated ledger with this change
             newwallet["Reputation"] += self.threshold
             new_wallets.append(newwallet)
 
         return new_wallets
-        # return (newwallet1, newwallet2)
-
+ 
     # Adds the wallet to the dictionary. Returns the key for the wallet in the dict
     def createwallet(self):
         # TODO @Eugine: Add in crypto code for initializing wallets - the way I
@@ -59,7 +64,7 @@ class Client():
         # 1. make private and public key and maybe some ID
         privatekey = None
         publickey = None
-        reputation = 1
+        reputation = 0 # going to leave reputation empty, so that transfer of reputation points can be handled elsewhere
 
         wallet = {
             "PrivateKey": privatekey,
