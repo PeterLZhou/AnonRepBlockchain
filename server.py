@@ -1,6 +1,7 @@
 import socket
 import threading
 import random
+import util
 from client import Client
 from ledger import Ledger
 
@@ -58,8 +59,18 @@ class Server():
                 self.sendsocket.sendto(message.encode(), (self.MY_IP, port))
 
     def postmessage(self, client_id, message):
+        if client_id not in self.MY_CLIENTS:
+            print("Unknown client")
+            return
         self.MY_MESSAGES[client_id] = message
-        # TODO: Broadcast stuff
+        # Calculate amount of reputation to use and sign
+        signed = self.MY_CLIENTS[client_id].generate_signed_messages(message)
+        print(signed)
+        # TODO: Post to single server or broadcast to all?
+
+    def dumpmessages(self):
+        # is this supposed to dump messages on the current server or after aggregation?
+        print("not implemented")
 
     def broadcastmessages(self):
         for client_id, message in self.MY_MESSAGES:

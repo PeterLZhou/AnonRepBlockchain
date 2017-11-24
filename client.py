@@ -13,7 +13,11 @@ class Client():
         #    "Reputation": the amount of reputation that the wallet has
         # maybe we want to add another item in here for the wallet's identity
         # }
-        self.wallets = dict()
+        self.wallets = []
+
+        # start with 1 wallet with reputation=1 (feel free to change this)
+        self.wallets.append(self.createwallet())
+
         # Client ID is just the ID of the port it's on, since we only have 1 client/port
         self.client_id = clientid
         # Long standing private key
@@ -55,7 +59,7 @@ class Client():
         # 1. make private and public key and maybe some ID
         privatekey = None
         publickey = None
-        reputation = 0
+        reputation = 1
 
         wallet = {
             "PrivateKey": privatekey,
@@ -64,3 +68,18 @@ class Client():
         }
 
         return wallet
+
+    def generate_signed_messages(self, message_text):
+        # TODO: get last_highest_rep from coordinator and choose amount of reputation to use
+        signed_messages = []
+
+        # currently use all reputation
+        for wallet in self.wallets:
+            message_dict = {
+                "text": message_text,
+                "signature": wallet["PrivateKey"]
+                # TODO: not sure we need to add a nym here? isn't the signature sufficient?
+                #"nym" = 
+            }
+            signed_messages.append(message_dict)
+        return signed_messages

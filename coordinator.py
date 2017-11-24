@@ -40,6 +40,8 @@ class Coordinator():
         self.round_votes = {}
         self.current_phase = READY_FOR_NEW_ROUND
         self.connected = False
+        # store highest reputation from last round, broadcast with READ_FOR_NEW_ROUND
+        self.last_highest_rep = -1
 
         try:
             self.receivesocket.bind((self.my_ip, self.my_port))
