@@ -26,10 +26,10 @@ while True:
     elif args[0] == 'broadcast':
     	my_server.broadcastmessages()
     ### MESSAGING COMMANDS ###
-    # message <client_id (or one time pseudonym?)> <message (arbitrarily long with spaces)>
+    # postmessage <client_id (or one time pseudonym?)> <message (arbitrarily long with spaces)>
     elif args[0] == 'postmessage':
         client_id = args[1]
-        message = args[2:].join(' ')
+        message = ' '.join(args[2:])
         my_server.postmessage(client_id, message)
     ### VOTING COMMANDS ###
     # upvote/downvote <client_id> <message_id>

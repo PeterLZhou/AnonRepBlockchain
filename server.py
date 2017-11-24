@@ -1,5 +1,6 @@
 import socket
 import threading
+import random
 from client import Client
 from ledger import Ledger
 
@@ -30,10 +31,8 @@ class Server():
         ### CLIENT CREATION ###
         # Everyone creates one client on startup
         self.MY_CLIENTS = {}
-        new_client = Client(self.MY_PORT)
-        self.MY_CLIENTS[new_client.client_id] = new_client
-        print("Client {} added".format(new_client.client_id))
-        print("Client private key: ", new_client.private_key)
+        self.newclient();
+
         ### MESSAGE CREATION ###
         # Everyone has their own log of messages, every time we get a message append to log
         self.MY_MESSAGES = {}
@@ -68,9 +67,10 @@ class Server():
 
     def newclient(self):
         #TODO, decide on a naming scheme for client
-        new_client = Client(self.MY_PORT + str(rand(100)))
+        new_client = Client(str(self.MY_PORT) + str(random.randint(1, 100)))
         self.MY_CLIENTS[new_client.client_id] = new_client
         print("Client {} added".format(new_client.client_id))
+        print("Client private key: ", new_client.private_key)
 
     def upvote(self, client_id, message_id):
         # TODO: Linkable ring signature + upvote
