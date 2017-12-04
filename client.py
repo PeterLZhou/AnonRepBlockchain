@@ -54,7 +54,7 @@ class Client():
             new_wallets.append(newwallet)
 
         return new_wallets
- 
+
     # Adds the wallet to the dictionary. Returns the key for the wallet in the dict
     def createwallet(self):
         # TODO @Eugine: Add in crypto code for initializing wallets - the way I
@@ -84,7 +84,7 @@ class Client():
                 "text": message_text,
                 "signature": wallet["PrivateKey"]
                 # TODO: not sure we need to add a nym here? isn't the signature sufficient?
-                #"nym" = 
+                #"nym" =
             }
             signed_messages.append(message_dict)
         return signed_messages
