@@ -12,7 +12,7 @@ MODULO = 78259045243861432232475255071584746141480579030179831349765025070491917
 
 def main():
 
-    coordinator = Coordinator(GENERATOR, MODULO, "0.0.0.0", 5003)
+    coordinator = Coordinator(GENERATOR, MODULO, "127.0.0.1", 5003)
     thread1 = threading.Thread(target=coordinator.listenAndCoordinate)
     thread1.daemon = True
     thread1.start()
