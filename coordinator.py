@@ -33,6 +33,7 @@ class Coordinator():
         self.known_servers = []
         self.pending_servers = []
         self.original_reputation_map = {}
+        self.known_client_pubkeys = []
         self.nym_map = {}
         self.final_generator = None
         self.aggregated_messages = []
@@ -43,6 +44,7 @@ class Coordinator():
         # store highest reputation from last round, broadcast with READ_FOR_NEW_ROUND
         self.last_highest_rep = -1
         self.num_rounds = 0
+        self.last_block = None
 
         try:
             self.receivesocket.bind((self.my_ip, self.my_port))
@@ -91,7 +93,7 @@ class Coordinator():
     def handleMessage(self, message_dict):
 
         new_aggr_msg = {}
-        new_aggr_msg["text"] = message_dict["text"]
+        new_aggr_msg["text"] = message_dict["text_msg"]
         new_aggr_msg["signature"] = None # change later
         new_aggr_msg["nyms"] = message_dict["signatures"] # actually the public keys
         new_aggr_msg["id"] = len(self.aggregated_messages) + 1
@@ -136,47 +138,81 @@ class Coordinator():
     #             pm["msg_type"] = "MESSAGE_BROADCAST"
     #             util.sendDict(pm, server_ip, server_port, self.receivesocket)
 
+    def decideLeader(self):
+
+        return self.known_servers[0]
+
     def handleVote(self, vote_dict):
 
-        vote_text = vote_dict["text"]
-        sig = vote_dict["signature"]
-        # sender_nym = vote_dict["nym"]
+        msg_id = vote_dict["msg_id"]
+        vote = vote_dict["vote"]
+        lrs = vote_dict["signature"]
 
         # check if duplicate vote using linkable ring signature
-
-        commands = vote_text.split()
-        msg_id = int(commands[0])
-        vote = int(commands[1])
 
         if(len(aggregated_messages) < msg_id or (vote != -1 and vote != 1)):
             # invalid vote, send reply saying this
             print("Invalid vote {0} for {1} received from {2}".format(vote, msg_id, sender_nym))
             return
         else:
-            # store votes by message
+            vote_dict["msg_type"] = "NEW_VOTE"
+
             if msg_id in self.round_votes:
                 self.round_votes[msg_id]  += vote
             else:
                 self.round_votes[msg_id] = vote
+
+            leader_ip, leader_port = self.decideLeader()
+            util.sendDict(vote_dict, leader_ip, leader_port, self.receivesocket)
 
     # When voting phase is over, blockchain contains a list of transactions
     # that determine how many votes a message received. Aggregate them and broadcast
     # to all servers
     def aggregateVotes(self, vote_dict):
 
-        blockchain = vote_dict["blockchain"]
+        aggr_votes = vote_dict["aggr_votes"]
+        vote_per_wallet = {}
 
-        for (idx, msg) in enumerate(self.aggregated_messages):
-            msg_votes = util.aggregateBlockchain(msg["id"])
-            self.round_votes[msg_id] = min(msg_votes, -len(msg["nyms"]))
-            msg["votes"] = self.round_votes[msg_id]
-            self.aggregated_messages[idx] = msg
+        for msg in self.aggregated_messages:
+            if msg["msg_id"] in aggr_votes:
+                total_votes = aggr_votes[msg["msg_id"]]
+                num_nyms = len(msg["nyms"])
+
+                for (idx, nym) in enumerate(msg["nyms"]):
+                    wallet_rep = total_votes / (num_nyms - idx)
+                    if wallet_rep < -2:
+                        wallet_rep = -2
+                    total_votes = total_votes - wallet_rep
+                    if nym in vote_per_wallet:
+                        vote_per_wallet[nym] = max(-2, vote_per_wallet[nym] + wallet_rep)
+                    else:
+                        vote_per_wallet[nym] = wallet_rep
+
+        for nym in self.nym_map:
+            if nym in vote_per_wallet:
+                vote_per_wallet += 1
+            else:
+                vote_per_wallet = 1
+
+        pm = {
+            "msg_type": "WALLET_SPLIT"
+            "wallet_delta": vote_per_wallet
+        }
 
         for (server_ip, server_port) in self.known_servers:
-            pm = {}
-            pm["msg_type"] = "VOTE_RESULT"
-            pm["votes"] = self.aggregated_messages
             util.sendDict(pm, server_ip, server_port, self.receivesocket)
+
+        # for (idx, msg) in enumerate(self.aggregated_messages):
+        #     msg_votes = util.aggregateBlockchain(blockchain, msg["id"])
+        #     self.round_votes[msg_id] = min(msg_votes, -len(msg["nyms"]))
+        #     msg["votes"] = self.round_votes[msg_id]
+        #     self.aggregated_messages[idx] = msg
+        #
+        # for (server_ip, server_port) in self.known_servers:
+        #     pm = {}
+        #     pm["msg_type"] = "VOTE_RESULT"
+        #     pm["votes"] = self.aggregated_messages
+        #     util.sendDict(pm, server_ip, server_port, self.receivesocket)
 
     def registerNewWallet(self, wallet_dict):
 
@@ -185,6 +221,14 @@ class Coordinator():
         # do error checking to see if sender was allowed to send this wallet
         self.original_reputation_map[wallet_pub_key] = 1
         print("Registered new wallet", wallet_pub_key)
+
+    def handleClientJoin(self, client_dict):
+
+        if "public_key" in client_dict:
+            client_pub_key = client_dict["public_key"]
+            self.known_client_pubkeys.append(client_pub_key)
+
+        print("Registered new client", client_pub_key)
 
 
     def handleServerJoin(self, server_ip, server_port):
@@ -215,17 +259,32 @@ class Coordinator():
     # handle the results of shuffle phase from last server
     def handleAnnouncement(self, announce_dict):
 
+        print("Announcing nyms")
+        print(announce_dict["wallet_list"])
+
         self.nym_map = announce_dict["wallet_list"]
-        gen_powered = announce_dict["g"]
+        self.final_generator = announce_dict["g"]
         pm = {}
         pm["nym_map"] = self.nym_map
         pm["msg_type"] = "NYM_ANNOUNCE"
-        pm["gen_powered"] = gen_powered
+        pm["gen_powered"] = self.final_generator
         pm["g"] = self.gen
         pm["p"] = self.p
 
         for (ip, port) in self.known_servers:
             util.sendDict(pm, ip, port, self.receivesocket)
+
+        # broadcast client public keys
+        pm = {}
+        pm["client_pubkeys"] = self.known_client_pubkeys
+        pm["msg_type"] = "CLIENT_ANNOUNCE"
+
+        for (ip, port) in self.known_servers:
+            util.sendDict(pm, ip, port, self.receivesocket)
+
+    def broadcastLedger(self, ledger_dict):
+        or (ip, port) in self.known_servers:
+            util.sendDict(ledger_dict, ip, port, self.receivesocket)
 
 
     def listenAndCoordinate(self):
@@ -249,8 +308,10 @@ class Coordinator():
             # handle the message
             if new_data['msg_type'] == "SERVER_JOIN":
                 self.handleServerJoin(sender_ip, sender_port)
-            elif new_data['msg_type'] == "NEW_MESSAGE":
-                pass
+            elif new_data['msg_type'] == "CLIENT_JOIN":
+                self.handleClientJoin(new_data)
+            elif new_data['msg_type'] == "MESSAGE":
+                self.handleMessage(new_data)
             elif new_data['msg_type'] == "NEW_VOTE":
                 self.handleVote(new_data)
             elif new_data['msg_type'] == "NEW_WALLET":
@@ -262,3 +323,7 @@ class Coordinator():
                     continue
                 self.startNextRound()
                 self.handleAnnouncement(new_data)
+            elif new_data['msg_type'] == "LEDGER_UPDATE":
+                if self.current_phase != VOTE:
+                    continue
+                self.broadcastLedger(new_data)

@@ -43,6 +43,8 @@ class Server():
         ### we can have the ledgers be in just the clients or just the servers or both
         self.MY_LEDGER = Ledger()
 
+        self.current_round = "NONE"
+
     def listen(self):
         while True:
             data, addr = self.receivesocket.recvfrom(100000) # buffer size is 1024 bytes
@@ -60,6 +62,7 @@ class Server():
                 gen_powered = data['gen_powered']
                 self.CURRENT_GEN_POWERED = gen_powered
                 self.shownyms(nym_map)
+                self.current_round = 'POST_MESSAGE'
             elif data['msg_type'] == 'SERVER_JOIN_REPLY':
                 print("Server join status: ", data["status"])
             elif data['msg_type'] == 'LEDGER_UPDATE': # a new block has been appended to the blockchain
@@ -81,6 +84,9 @@ class Server():
                 self.showmessage(text, msg_id, nyms)
             elif data['msg_type'] == 'SERVER_JOIN_REPLY':
                 print("Server join status: ", data["status"])
+            elif data['msg_type'] == 'VOTE_START':
+                self.current_round = 'VOTE_START'
+                print("Voting round started.")
 
     def send(self, data, ip_addr, port):
         util.sendDict(data, ip_addr, port, self.receivesocket)
@@ -97,6 +103,8 @@ class Server():
     def postmessage(self, client_id, reputation, message):
         if client_id not in self.MY_CLIENTS:
             print("Unknown client")
+            return
+        if self.current_round != "POST_MESSAGE":
             return
         # self.MY_MESSAGES[client_id] = message
 
@@ -128,7 +136,10 @@ class Server():
         self.MY_CLIENTS[new_client.client_id] = new_client
         print("Server: Client {} created".format(new_client.client_id))
         data = dict()
-        data['msg_type'] = 'NEW_WALLETS'
+        data['msg_type'] = 'CLIENT_JOIN'
+        data['public_key'] = new_client.public_key
+        self.sendtocoordinator(data)
+        data['msg_type'] = 'NEW_WALLET'
         data['public_key'] = new_client.wallets[0]['public_key']
         self.sendtocoordinator(data)
 
@@ -149,11 +160,14 @@ class Server():
         new_dict['server_list'] = server_list
         self.send(new_dict, receiver[0], receiver[1])
 
-    def shownyms(self, nym_map, gen_powered):
+    def shownyms(self, nym_map):
+        print("Here")
         for nym in nym_map:
             print("{0}: Reputation 1".format(nym))
 
     def vote(self, client_id, message_id, vote):
+        if self.current_round != "VOTE_START":
+            return
         # get message
         message = message_id
         lrs = util.LRSsign() # (signing_key, public_key_idx, message, public_key_list)
@@ -166,15 +180,15 @@ class Server():
         self.sendtocoordinator(new_message)
 
     def newvoteupdateledger(self, message): # this is the leader server updating the ledger
-        self.MY_LEDGER.logvote(message['vote'])
+        new_block = self.MY_LEDGER.logvote(message['vote'])
         new_message = {
             'msg_type': "LEDGER_UPDATE",
-            'ledger': self.MY_LEDGER
+            'new_block': new_block
         }
         self.sendtocoordinator(new_message)
 
     def mergeledger(self, message):
-        self.MY_LEDGER = message['ledger']
+        self.MY_LEDGER.appendblock(message['new_block'])
 
     def sendvotestoclients(self, vote_list, gen_powered):
         new_wallet_list = []
@@ -188,7 +202,7 @@ class Server():
         self.sendtocoordinator(mydict)
 
     def showmessage(self, text, msg_id, nyms):
-        print("ID: {0} Message: {1}. Signed by {2}", msg_id, text, nyms)
+        print("ID: {0} Message: {1}. Signed by {2}".format(msg_id, text, nyms))
 
     def proofofwork(self, hash):
         salt = 0
