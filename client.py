@@ -48,6 +48,7 @@ class Client():
                 if verify_nym(wallet, nym, gen_powered):
                     # Create however many new wallets or destroy, then append to new_wallet_list and new_public_keys_list
                     # Add this transaction to blockchain
+                    print("TODO")
         self.wallets = new_wallet_list
         return new_public_keys_list
 
@@ -89,5 +90,5 @@ class Client():
     def get_signatures(self, message, reputation, gen_powered):
         signature_list = list()
         for i in range(reputation):
-            signature_list.append(util.elgamalsign(message, wallet[i]['private_key'], gen_powered, P)
+            signature_list.append(util.elgamalsign(message, wallet[i]['private_key'], gen_powered, P))
         return signature_list
