@@ -14,7 +14,8 @@ class Ledger:
         '''
 
         self.BLOCKS = {}
-        self.TAIL_BLOCK = -1 # default starting block
+        self.TAIL_BLOCK = "-1" # default starting block
+        self.BLOCKS[self.TAIL_BLOCK] = -1
         self.ALL_VOTES = {}
         # ALL_VOTES will be an aggregate of all the votes on the messages and will be a dict as follows:
         '''
@@ -23,8 +24,12 @@ class Ledger:
             }
         '''
     def appendblock(self, new_block):
-        self.BLOCKS.insert(new_block)
-        self.TAIL_BLOCK = util.sha256hash(str(new_block))
+        # insert optional verification
+        new_block_hash = util.sha256hash(str(new_block))
+        self.BLOCKS[new_block_hash] = new_block
+        self.TAIL_BLOCK = new_block_hash
+        if 'msg_id' in new_block and 'vote' in new_block:
+            self.updatevotes(new_block['msg_id'], new_block['vote'])
 
     def logvote(self, link_ring_sig, msg_id, vote):
         '''processing a vote, should only be called by lead server
@@ -35,7 +40,6 @@ class Ledger:
             "points": vote
             "prev_block": self.TAIL_BLOCK
         }
-        self.updatevotes(msg_id, vote)
         salt = self.signblock(new_block)
         new_block['salt'] = salt
         self.appendblock(new_block)
@@ -62,14 +66,22 @@ class Ledger:
         return salt
 
     def verifysignature(self, prev_hash, salt):
-        '''
-            We can make this crypto as easy or as difficult as we want
+        '''We can make this crypto as easy or as difficult as we want
         '''
         result = util.sha256hash(prev_hash + salt)
         if ord(result[0]) < 10:
             return True
         else:
             return False
+
+    def auditblocks(self):
+        current_block = self.BLOCKS[self.TAIL_BLOCK]
+        while current_block != -1: # while not at tail
+            if not self.verifysignature(current_block['prev_hash'], current_block['salt']):
+                return False
+            else:
+                current_block = self.BLOCKS[current_block['prev_hash']]
+        return True
 
     def updatevotes(self, msg_id, vote):
         if msg_id in self.ALL_VOTES:
