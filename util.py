@@ -58,8 +58,8 @@ def elgamalsign(message, private_key, gen_powered, P):
 def elgamalverify(message, pseudonym, r, s, gen_powered, P):
     a = modexp(gen_powered, modexp(sha256hash(message.encode()), 1, P-1), P)
     b = modexp(modexp(pseudonym, r, P) * modexp(r, s, P), 1, P)
-    print(a)
-    print(b)
+    print("Message as hash = ", a)
+    print("Psuedonym^r * r^s = ", b)
     return a == b
 
 def egcd(a, b):

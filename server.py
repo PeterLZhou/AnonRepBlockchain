@@ -9,6 +9,8 @@ from ledger import Ledger
 ALL_PORTS = [5000, 5001, 5002]
 COORDINATOR_PORT = 5003
 MODULO = 78259045243861432232475255071584746141480579030179831349765025070491917900839
+P = 78259045243861432232475255071584746141480579030179831349765025070491917900839
+G = 850814731652311369604857817867299164248640829807806264080080192664697908283
 
 class Server():
     def __init__(self):
@@ -23,7 +25,7 @@ class Server():
         # Creates a socket at localhost and next available 5000 client
         self.MY_IP = "127.0.0.1"
         self.MY_PORT = 5000
-        self.CURRENT_GEN_POWERED = None
+        self.CURRENT_GEN_POWERED = G
         connected = False
         while not connected:
             try:
@@ -117,7 +119,10 @@ class Server():
             print("Not enough reputation points! Message cannot be posted!")
             return
 
-        wallet_signatures = self.MY_CLIENTS[client_id].get_signatures(message, reputation, self.CURRENT_GEN_POWERED)
+        wallet_signatures, wallet_pseudonyms = self.MY_CLIENTS[client_id].get_signatures(message, reputation, self.CURRENT_GEN_POWERED)
+        for i in range(len(wallet_signatures)):
+            print("Verifying message")
+            assert(util.elgamalverify(message, wallet_pseudonyms[i], wallet_signatures[i][0], wallet_signatures[i][1], self.CURRENT_GEN_POWERED, P))
         new_message = {
             'msg_type': "MESSAGE",
             'text_msg': message,

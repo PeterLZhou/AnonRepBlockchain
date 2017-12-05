@@ -92,6 +92,8 @@ class Client():
 
     def get_signatures(self, message, reputation, gen_powered):
         signature_list = list()
+        pseudonym_list = list()
         for i in range(reputation):
-            signature_list.append(util.elgamalsign(message, wallet[i]['private_key'], gen_powered, P))
-        return signature_list
+            signature_list.append(util.elgamalsign(message, self.wallets[i]['private_key'], gen_powered, P))
+            pseudonym_list.append(util.modexp(gen_powered, self.wallets[i]['private_key'], P))
+        return (signature_list, pseudonym_list)
