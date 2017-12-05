@@ -52,7 +52,7 @@ def sha256hash(key):
 def elgamalsign(message, private_key, gen_powered, P):
     k = 10**9 + 7
     r = modexp(gen_powered, k, P-1)
-    s = modexp(modexp(sha256hash(message) - private_key * r), 1, P-1) * modinv(k, P-1), 1, P-1)
+    s = modexp((modexp(sha256hash(message) - private_key * r), 1, P-1) * modinv(k, P-1), 1, P-1)
     return (r, s)
 
 def elgamalverify(message, pseudonym, r, s, gen_powered, P):
@@ -69,9 +69,6 @@ def modinv(a, m):
     if g != 1:
         raise Exception('No modular inverse')
     return x%m
-
-e = 17
-d = modinv(e, k)
 
 def aggregateBlockchain(blockchain, msg_id):
     points = 0
