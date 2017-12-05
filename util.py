@@ -46,6 +46,13 @@ def generateWalletKeys():
 def sha256hash(key):
     return hashlib.sha256(key).hexdigest()
 
+def aggregateBlockchain(blockchain, msg_id):
+    points = 0
+    for block in blockchain:
+        if block["msg_id"] == msg_id:
+            points += block["points"]
+    return points
+
 if __name__ == "__main__":
     ### TEST FOR LRS SIGN ###
     number_participants = 10

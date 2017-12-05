@@ -137,6 +137,9 @@ class Server():
         self.MY_CLIENTS[new_client.client_id] = new_client
         print("Server: Client {} created".format(new_client.client_id))
         data = dict()
+        data['msg_type'] = 'CLIENT_JOIN'
+        data['public_key'] = new_client.public_key
+        self.sendtocoordinator(data)
         data['msg_type'] = 'NEW_WALLET'
         data['public_key'] = new_client.wallets[0]['public_key']
         self.sendtocoordinator(data)
