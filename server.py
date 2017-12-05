@@ -62,8 +62,8 @@ class Server():
                 print("Server join status: ", data["status"])
             elif data['msg_type'] == 'LEDGER_UPDATE': # a new block has been appended to the blockchain
                 self.mergeledger(data)
-            elif data['msg_type'] == 'NEW_BLOCK_APPENDED': # this server has been selected to be the leader
-                self.updateledger(data)
+            elif data['msg_type'] == 'NEW_VOTE': # this server has been selected to be the leader
+                self.newvoteupdateledger(data)
             elif data['msg_type'] == 'VOTE_RESULT':
                 vote_list = data['votes'] # a list of objects with structure : {text, id, nyms, votes}
                 new_public_keys = self.sendvotestoclients(vote_list)
@@ -166,24 +166,22 @@ class Server():
         }
         self.sendtocoordinator(new_message)
 
-    def newvoteupdateledger(self, message):
+    def newvoteupdateledger(self, message): # this is the leader server updating the ledger
         self.MY_LEDGER.logvote(message['vote'])
         new_message = {
-            'msg_type': "NEW_BLOCK_APPENDED",
+            'msg_type': "LEDGER_UPDATE",
             'ledger': self.MY_LEDGER
         }
         self.sendtocoordinator(new_message)
 
-<<<<<<< HEAD
     def mergeledger(self, message):
         self.MY_LEDGER = message['ledger']
-=======
+
     def sendvotestoclients(self, vote_list, gen_powered):
         new_wallet_list = []
         for client in MY_CLIENTS:
             new_wallet_list.extend(recalculateWallets(vote_list, gen_powered))
         return new_wallet_list
->>>>>>> 5740f46672b003178178c8257cc53885fbb1854f
 
     def serverjoin(self):
         mydict = dict()

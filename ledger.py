@@ -18,7 +18,6 @@ class Ledger:
         '''
 
         self.BLOCKS = []
-        # self.AWAITING = []
         self.ALL_VOTES = {}
 
     def logvote(self, link_ring_sig, msg_id, vote):
@@ -30,6 +29,7 @@ class Ledger:
             "msg_id": msg_id,
             "points": vote
         }
+        self.updatevotes(msg_id, vote)
         salt = self.signblock(new_block)
         new_block['salt'] = salt
         self.BLOCKS.append(new_block)
@@ -51,4 +51,8 @@ class Ledger:
         print("Automatic signature approval")
         return True
 
-    def 
+    def updatevotes(self, msg_id, vote):
+        if msg_id in self.ALL_VOTES:
+            self.ALL_VOTES[msg_id] += vote
+        else:
+            self.ALL_VOTES[msg_id] = vote
