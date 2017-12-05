@@ -8,6 +8,7 @@ from ledger import Ledger
 #We hardcode all the available ports to make things easy
 ALL_PORTS = [5000, 5001, 5002]
 COORDINATOR_PORT = 5003
+MODULO = 78259045243861432232475255071584746141480579030179831349765025070491917900839
 
 class Server():
     def __init__(self):
@@ -32,6 +33,7 @@ class Server():
                 print("Port {} is probably in use".format(self.MY_PORT))
                 self.MY_PORT += 1
 
+        self.serverjoin()
         ### CLIENT CREATION ###
         self.MY_CLIENTS = {}
         self.newclient()
@@ -39,8 +41,6 @@ class Server():
         ### LEDGER CREATION ###
         ### we can have the ledgers be in just the clients or just the servers or both
         self.MY_LEDGER = Ledger()
-
-        self.serverjoin()
 
     def listen(self):
         while True:
@@ -64,6 +64,21 @@ class Server():
                 self.mergeledger(data)
             elif data['msg_type'] == 'NEW_BLOCK_APPENDED': # this server has been selected to be the leader
                 self.updateledger(data)
+            elif data['msg_type'] == 'VOTE_RESULT':
+                vote_list = data['votes'] # a list of objects with structure : {text, id, nyms, votes}
+                new_public_keys = self.sendvotestoclients(vote_list)
+                for public_key in new_public_keys:
+                    newdict = dict()
+                    newdict['msg_type'] = 'NEW_WALLET'
+                    newdict['public_key'] = public_key
+                    sendtocoordinator(newdict)
+            elif data['msg_type'] == 'MESSAGE_BROADCAST':
+                text = data['text']
+                msg_id = data['id']
+                nyms = data['nyms']
+                self.showmessage(text, msg_id, nyms)
+            elif data['msg_type'] == 'SERVER_JOIN_REPLY':
+                print("Server join status: ", data["status"])
 
     def send(self, data, ip_addr, port):
         util.sendDict(data, ip_addr, port, self.receivesocket)
@@ -114,11 +129,11 @@ class Server():
         self.MY_CLIENTS[new_client.client_id] = new_client
         print("Server: Client {} created".format(new_client.client_id))
         data = dict()
-        data['msg_type'] = 'NEW_WALLET'
+        data['msg_type'] = 'NEW_WALLETS'
         data['public_key'] = new_client.wallets[0]['public_key']
         self.sendtocoordinator(data)
 
-    def shuffle(wallet_list, g, p, server_list):
+    def shuffle(self, wallet_list, g, p, server_list):
         server_idx = server_list.index((self.MY_IP, self.MY_PORT))
         new_wallet_list = [(wallet ** self.randomnumber) % p for wallet in wallet_list]
         new_g = (g ** self.randomnumber) % p
@@ -135,10 +150,9 @@ class Server():
         new_dict['server_list'] = server_list
         self.send(new_dict, receiver[0], receiver[1])
 
-    def shownyms(self, nym_map):
+    def shownyms(self, nym_map, gen_powered):
         for nym in nym_map:
-            print(nym)
-            print("Reputation: 1")
+            print("{0}: Reputation 1".format(nym))
 
     def vote(self, client_id, message_id, vote):
         # get message
@@ -160,10 +174,21 @@ class Server():
         }
         self.sendtocoordinator(new_message)
 
+<<<<<<< HEAD
     def mergeledger(self, message):
         self.MY_LEDGER = message['ledger']
+=======
+    def sendvotestoclients(self, vote_list, gen_powered):
+        new_wallet_list = []
+        for client in MY_CLIENTS:
+            new_wallet_list.extend(recalculateWallets(vote_list, gen_powered))
+        return new_wallet_list
+>>>>>>> 5740f46672b003178178c8257cc53885fbb1854f
 
     def serverjoin(self):
         mydict = dict()
         mydict['msg_type'] = 'SERVER_JOIN'
         self.sendtocoordinator(mydict)
+
+    def showmessage(self, text, msg_id, nyms):
+        print("ID: {0} Message: {1}. Signed by {2}", msg_id, text, nyms)

@@ -5,6 +5,9 @@ import util
 from random import *
 from ledger import Ledger
 
+P = 78259045243861432232475255071584746141480579030179831349765025070491917900839
+G = 850814731652311369604857817867299164248640829807806264080080192664697908283
+
 class Client():
     def __init__(self, client_id):
         # I imagined wallets to be a list of dictionaries and each dictionary would have the following:
@@ -29,8 +32,6 @@ class Client():
         self.private_key = util.generatePrivateKey()
         self.public_key = util.generatePublicKey(self.private_key)
 
-        self.threshold = 1 # the maximum amount of reputation a wallet is allowed to have
-
         self.my_ledger = Ledger()
         print("Client ID: ", self.client_id)
         print("Client public key: ", self.public_key)
@@ -38,26 +39,33 @@ class Client():
 
     # Called by the server, returns a list of new wallets
     # the private keys will be kept by the client, but the public keys will be shared with the server
-    def split(self, walletid):
+    def recalculateWallets(self, vote_list, gen_powered):
+        prev_reputation = len(self.wallets)
+        for item in vote_list:
+            owner = False
+            for nym in nym_list:
+                if owner:
+                    break
+                for wallet in wallet:
+                    if verify_nym(wallet, nym, gen_powered):
+                        owner = True
+                        break
+            if owner:
+                prev_reputation += item['votes']
+        new_wallet_list = []
+        new_public_keys_list = []
+        for i in range(prev_reputation):
+            new_wallet = self.createwallet()
+            new_wallet_list.append(new_wallet)
+            new_public_keys_list.append(new_wallet['public_key'])
+        self.wallets = new_wallet_list
+        return new_public_keys_list
 
-        # I'm assuming that walletid is the oldwallet that needs to be split
-        # maybe we should be looping through all the wallets that the client has and calling a split on all of them
-        oldwallet = None #TODO @Eugine - once you figure createwallet out find out how to get the wallet by reference
-        new_wallets = []
 
-        # do some kind of signing with the privatekey of the oldwallet
-        signed_oldwallet = oldwallet["private_key"] # we obviously do NOT want to send the private key
-        while oldwallet['Reputation'] > self.threshold:
-            newwallet = self.createwallet()
-            # TODO: Split currency among the new wallets
 
-            # transfer threshold reputation points from oldwallet to newwallet
-            self.my_ledger.send_reputation(signed_oldwallet, newwallet["public_key"], self.threshold)
-            # make sure that the server is publishing/broadcasting the new updated ledger with this change
-            newwallet["Reputation"] += self.threshold
-            new_wallets.append(newwallet)
 
-        return new_wallets
+    def verify_nym(wallet, nym, gen_powered):
+        return util.modexp(gen_powered, wallet['private_key'], P) == nym
 
     # Adds the wallet to the dictionary. Returns the key for the wallet in the dict
     def createwallet(self):
