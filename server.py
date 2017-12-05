@@ -41,6 +41,7 @@ class Server():
         self.MY_CLIENTS = {}
         self.newclient()
 
+        self.known_clients = []
         ### LEDGER CREATION ###
         ### we can have the ledgers be in just the clients or just the servers or both
         self.MY_LEDGER = Ledger()
@@ -89,6 +90,8 @@ class Server():
             elif data['msg_type'] == 'VOTE_START':
                 self.current_round = 'VOTE_START'
                 print("Voting round started.")
+            elif data['msg_type'] == 'CLIENT_ANNOUNCE':
+                self.known_clients = data['client_pubkeys']
 
     def send(self, data, ip_addr, port):
         util.sendDict(data, ip_addr, port, self.receivesocket)
@@ -175,7 +178,10 @@ class Server():
             return
         # get message
         message = message_id
-        lrs = util.LRSsign() # (signing_key, public_key_idx, message, public_key_list)
+        public_key_idx = self.known_clients.index(self.MY_CLIENTS[client_id].public_key)
+        signing_key = self.MY_CLIENTS[client_id].private_key
+
+        lrs = util.LRSsign(signing_key, public_key_idx, message, self.known_clients) # (signing_key, public_key_idx, message, public_key_list)
         new_message = {
             'msg_type': "VOTE",
             'signature': lrs,
