@@ -216,12 +216,12 @@ class Coordinator():
             util.sendDict(pm, ip, port)
 
 
-    def listenAndCoordinate(self, phase_duration=5.0, timeout=0.1):
+    def listenAndCoordinate(self):
 
-        while True:
-            time_now = time.clock()
-            if(time_now - self.current_phase_start > phase_duration):
-                self.startNextRound()
+        # while True:
+        #     time_now = time.clock()
+        #     if(time_now - self.current_phase_start > phase_duration):
+        #         self.startNextRound()
 
         # read datagram if any
         # @Peter: I need a readData method that reads a dictionary, returning
