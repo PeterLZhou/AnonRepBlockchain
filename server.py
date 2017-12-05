@@ -109,8 +109,7 @@ class Server():
             print("Not enough reputation points! Message cannot be posted!")
             return
 
-            wallet_signatures = self.MY_CLIENTS[client_id].getnyms(reputation, self.CURRENT_GEN_POWERED)
-
+        wallet_signatures = self.MY_CLIENTS[client_id].get_signatures(message, reputation, self.CURRENT_GEN_POWERED)
         new_message = {
             'msg_type': "MESSAGE",
             'text_msg': message,

@@ -40,24 +40,14 @@ class Client():
     # Called by the server, returns a list of new wallets
     # the private keys will be kept by the client, but the public keys will be shared with the server
     def recalculateWallets(self, vote_list, gen_powered):
-        prev_reputation = len(self.wallets)
-        for item in vote_list:
-            owner = False
-            for nym in nym_list:
-                if owner:
-                    break
-                for wallet in wallet:
-                    if verify_nym(wallet, nym, gen_powered):
-                        owner = True
-                        break
-            if owner:
-                prev_reputation += item['votes']
         new_wallet_list = []
         new_public_keys_list = []
-        for i in range(prev_reputation):
-            new_wallet = self.createwallet()
-            new_wallet_list.append(new_wallet)
-            new_public_keys_list.append(new_wallet['public_key'])
+        prev_reputation = len(self.wallets)
+        for nym in vote_list:
+            for wallet in self.wallets:
+                if verify_nym(wallet, nym, gen_powered):
+                    # Create however many new wallets or destroy, then append to new_wallet_list and new_public_keys_list
+                    # Add this transaction to blockchain
         self.wallets = new_wallet_list
         return new_public_keys_list
 
@@ -96,8 +86,8 @@ class Client():
             signed_messages.append(message_dict)
         return signed_messages
 
-    def getnyms(self, reputation, gen_powered):
-        nym_list = list()
+    def get_signatures(self, message, reputation, gen_powered):
+        signature_list = list()
         for i in range(reputation):
-            nym_list.append(util.modexp(gen_powered, self.wallets[i]['private_key'], P)
-        return nym_list
+            signature_list.append(util.elgamalsign(message, wallet[i]['private_key'], gen_powered, P)
+        return signature_list
