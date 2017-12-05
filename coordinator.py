@@ -12,10 +12,9 @@ SERVER_CONFIG = 0
 READY_FOR_NEW_ROUND = 1
 ANNOUNCE = 2
 MESSAGE_SEND = 3
-MESSAGE_BROADCAST = 4
-VOTE = 5
-SPLIT = 6
-REVERTNYM = 7
+VOTE = 4
+SPLIT = 5
+REVERTNYM = 6
 
 class Coordinator():
 
@@ -25,7 +24,7 @@ class Coordinator():
         #self.receivesocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.my_ip = ip
         self.my_port = port
-        self.NEXT_PHASE = [SERVER_CONFIG, READY_FOR_NEW_ROUND, ANNOUNCE, MESSAGE_SEND, MESSAGE_BROADCAST, VOTE, REVERTNYM]
+        self.NEXT_PHASE = [SERVER_CONFIG, READY_FOR_NEW_ROUND, ANNOUNCE, MESSAGE_SEND, VOTE, SPLIT]
         self.current_phase_start = time.clock()
 
         self.gen = generator
