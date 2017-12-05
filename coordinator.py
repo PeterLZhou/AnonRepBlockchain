@@ -21,8 +21,8 @@ class Coordinator():
 
     def __init__(self, generator, modulus, ip, port):
 
-        self.sendsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.receivesocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        #self.receivesocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.my_ip = ip
         self.my_port = port
         self.NEXT_PHASE = [SERVER_CONFIG, READY_FOR_NEW_ROUND, ANNOUNCE, MESSAGE_SEND, MESSAGE_BROADCAST, VOTE, REVERTNYM]
@@ -67,7 +67,7 @@ class Coordinator():
             pm = {}
             pm['msg_type'] = "VOTE_START"
             for server_ip, server_port in self.known_servers:
-                util.sendDict(pm, server_ip, server_port)
+                util.sendDict(pm, server_ip, server_port, self.receivesocket)
 
     def startShuffle(self):
 
@@ -83,7 +83,7 @@ class Coordinator():
         pm["server_list"] = self.known_servers
 
         server_ip, server_port = self.known_servers[0]
-        util.sendDict(pm, server_ip, server_port)
+        util.sendDict(pm, server_ip, server_port, self.receivesocket)
 
     def handleMessage(self, message_dict):
 
@@ -126,7 +126,7 @@ class Coordinator():
             for message in self.aggregated_messages:
                 pm = message
                 pm["msg_type"] = "MESSAGE_BROADCAST"
-                util.sendDict(pm, server_ip, server_port)
+                util.sendDict(pm, server_ip, server_port, self.receivesocket)
 
     def handleVote(self, vote_dict):
 
@@ -168,7 +168,7 @@ class Coordinator():
             pm = {}
             pm["msg_type"] = "VOTE_RESULT"
             pm["votes"] = self.aggregated_messages
-            util.sendDict(pm, server_ip, server_port)
+            util.sendDict(pm, server_ip, server_port, self.receivesocket)
 
     def registerNewWallet(self, wallet_dict):
 
@@ -186,7 +186,7 @@ class Coordinator():
         for known_ip, known_port in self.known_servers:
             if known_ip == server_ip and known_port == server_port:
                 pm["status"] = "INVALID"
-                util.sendDict(pm, server_ip, server_port)
+                util.sendDict(pm, server_ip, server_port, self.receivesocket)
                 return
 
         if len(self.known_servers) > 0:
@@ -197,10 +197,10 @@ class Coordinator():
             pm["next_hop_ip"], pm["next_hop_port"] = self.known_servers[-1]
             prev_ip, prev_port = self.known_servers[-2]
 
-            util.sendDict(next_hop_msg, prev_ip, prev_port)
+            util.sendDict(next_hop_msg, prev_ip, prev_port, self.receivesocket)
 
-        util.sendDict(pm, server_ip, server_port)
-        print("New server ({1}, {2}) joined." % (server_ip, server_port))
+        util.sendDict(pm, server_ip, server_port, self.receivesocket)
+        print("New server joined: " ,server_ip, server_port)
 
     # handle the results of shuffle phase from last server
     def handleAnnouncement(self, announce_dict):
@@ -215,7 +215,7 @@ class Coordinator():
         pm["p"] = self.p
 
         for (ip, port) in self.known_servers:
-            util.sendDict(pm, ip, port)
+            util.sendDict(pm, ip, port, self.receivesocket)
 
 
     def listenAndCoordinate(self):
@@ -238,8 +238,8 @@ class Coordinator():
 
             # handle the message
             if new_data['msg_type'] == "SERVER_JOIN":
-                handleServerJoin(sender_ip, sender_port)
+                self.handleServerJoin(sender_ip, sender_port)
             elif new_data['msg_type'] == "NEW_MESSAGE":
                 pass
             elif new_data['msg_type'] == "NEW_VOTE":
-                handleVote(new_data)
+                self.handleVote(new_data)

@@ -12,15 +12,15 @@ COORDINATOR_PORT = 5003
 class Server():
     def __init__(self):
         # Used for the server to send outbound messages
-        self.sendsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.receivesocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         #Used for the server to receive inbound messages
-        self.receivesocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
+        # self.receivesocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
         #Used for the shuffle protocol
         self.randomnumber = (int) (random.random() * 1000)
 
         ### SOCKET CREATION ###
         # Creates a socket at localhost and next available 5000 client
-        self.MY_IP = "0.0.0.0"
+        self.MY_IP = "127.0.0.1"
         self.MY_PORT = 5000
         connected = False
         while not connected:
@@ -58,20 +58,25 @@ class Server():
                 nym_map = data['nym_map']
                 gen_powered = data['gen_powered']
                 self.shownyms(nym_map)
+<<<<<<< HEAD
             elif data['msg_type'] == 'VOTE': # or block chain stuff?
                 self.receivedvote(data)
+=======
+            elif data['msg_type'] == 'SERVER_JOIN_REPLY':
+                print("Server join status: ", data["status"])
+>>>>>>> 0e26795500013b78c54b93b2658d001f250ebc56
 
     def send(self, data, ip_addr, port):
-        util.sendDict(data, ip_addr, port, self.sendsocket)
+        util.sendDict(data, ip_addr, port, self.receivesocket)
 
     # Send a message to every port which is not yourself
     def sendall(self, data):
         for port in ALL_PORTS:
             if port != self.MY_PORT:
-                util.sendDict(data, self.MY_IP, port, self.sendsocket)
+                util.sendDict(data, self.MY_IP, port, self.receivesocket)
 
     def sendtocoordinator(self, data):
-        util.sendDict(data, self.MY_IP, COORDINATOR_PORT, self.sendsocket)
+        util.sendDict(data, self.MY_IP, COORDINATOR_PORT, self.receivesocket)
 
     def postmessage(self, client_id, reputation, message):
         if client_id not in self.MY_CLIENTS:
