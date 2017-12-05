@@ -45,11 +45,12 @@ class Server():
     def listen(self):
         while True:
             data, addr = self.receivesocket.recvfrom(1024) # buffer size is 1024 bytes
-            data = util.deserialize(data).decode()
+            data = util.readDict(data)
             if data['msg_type'] == 'SHUFFLE_START':
                 client_ids = data['client_id']
                 public_keys = data['public_key']
-            elif data['msg_type'] == 
+            elif data['msg_type'] == 'TEST':
+                print(data['message'])
 
 
     # Send a message to every port which is not yourself
