@@ -15,6 +15,8 @@ class Server():
         self.sendsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         #Used for the server to receive inbound messages
         self.receivesocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
+        #Used for the shuffle protocol
+        self.randomnumber = (int) (random.random() * 1000)
 
         ### SOCKET CREATION ###
         # Creates a socket at localhost and next available 5000 client
@@ -34,23 +36,29 @@ class Server():
         self.MY_CLIENTS = {}
         self.newclient()
 
-        ### MESSAGE CREATION ###
-        # Everyone has their own log of messages, every time we get a message append to log
-        self.MY_MESSAGES = {}
-
         ### LEDGER CREATION ###
         ### we can have the ledgers be in just the clients or just the servers or both
         self.MY_LEDGER = Ledger()
 
     def listen(self):
         while True:
-            data, addr = self.receivesocket.recvfrom(1024) # buffer size is 1024 bytes
-            data = util.deserialize(data).decode()
-            if data['msg_type'] == 'SHUFFLE_START':
-                client_ids = data['client_id']
-                public_keys = data['public_key']
-            elif data['msg_type'] == 
+            data, addr = self.receivesocket.recvfrom(100000) # buffer size is 1024 bytes
+            data = util.readDict(data)
+            if data['msg_type'] == 'SHUFFLE':
+                wallet_list = data['wallet_list']
+                g = data['g']
+                p = data['p']
+                server_list = data['server_list']
+                self.shuffle(wallet_list, g, p, server_list)
+            elif data['msg_type'] == 'TEST':
+                print(data['message'])
+            elif data['msg_type'] == 'NYM_ANNOUNCE':
+                nym_map = data['nym_map']
+                gen_powered = data['gen_powered']
+                self.shownyms(nym_map)
 
+    def send(self, data, ip_addr, port):
+        util.sendDict(data, ip_addr, port, self.sendsocket)
 
     # Send a message to every port which is not yourself
     def sendall(self, data):
@@ -61,19 +69,31 @@ class Server():
     def sendtocoordinator(self, data):
         util.sendDict(data, self.MY_IP, COORDINATOR_PORT, self.sendsocket)
 
-    def postmessage(self, client_id, message):
+    def postmessage(self, client_id, reputation, message):
         if client_id not in self.MY_CLIENTS:
             print("Unknown client")
             return
-        self.MY_MESSAGES[client_id] = message
-        # Calculate amount of reputation to use and sign
-        signed = self.MY_CLIENTS[client_id].generate_signed_messages(message)
-        print(signed)
-        # TODO: Post to single server or broadcast to all?
+        # self.MY_MESSAGES[client_id] = message
 
-    def dumpmessages(self):
-        # is this supposed to dump messages on the current server or after aggregation?
-        print("not implemented")
+        # signing??? should be implemented in client.py to use and sign
+        # signed = self.MY_CLIENTS[client_id].generate_signed_messages(message)
+        # print(signed)
+
+        # Calculate amount of reputation 
+        if len(self.MY_CLIENTS[client_id].wallets) < reputation:
+            print("Not enough reputation points! Message cannot be posted!")
+            return
+
+        wallet_signatures = []
+        for i in range(reputation):
+            wallet_signatures.append(self.MY_CLIENTS[client_id].wallets[i]['public_key'])
+
+        new_message = {
+            'msg_type': message,
+            'signatures': wallet_signatures,    
+        }
+        # Post to coordinator
+        self.sendtocoordinator(new_message)
 
     def broadcastmessages(self):
         for client_id, message in self.MY_MESSAGES:
@@ -82,12 +102,34 @@ class Server():
     def newclient(self):
         #TODO, decide on a naming scheme for client
         new_client = Client(str(self.MY_PORT) + str(random.randint(1, 100)))
+        self.MY_CLIENTS[new_client.client_id] = new_client
         print("Server: Client {} created".format(new_client.client_id))
         data = dict()
-        data['type'] = 'new_client'
-        data['client_id'] = new_client.client_id
-        data['public_key'] = new_client.public_key
+        data['msg_type'] = 'NEW_WALLET'
+        data['public_key'] = new_client.wallets[0]['public_key']
         self.sendtocoordinator(data)
+
+    def shuffle(wallet_list, g, p, server_list):
+        server_idx = server_list.index((self.MY_IP, self.MY_PORT))
+        new_wallet_list = [(wallet ** self.randomnumber) % p for wallet in wallet_list]
+        new_g = (g ** self.randomnumber) % p
+        new_dict = dict()
+        if server_idx == len(server_list) - 1:
+            receiver = (self.MY_IP, COORDINATOR_PORT)
+            new_dict['msg_type'] = 'SHUFFLE_END'
+        else:
+            receiver = (self.MY_IP, server_list[server_idx + 1][1])
+            new_dict['msg_type'] = 'SHUFFLE'
+        new_dict['wallet_list'] = new_wallet_list
+        new_dict['g'] = new_g
+        new_dict['p'] = p
+        new_dict['server_list'] = server_list
+        self.send(new_dict, receiver[0], receiver[1])
+
+    def shownyms(self, nym_map):
+        for nym in nym_map:
+            print(nym)
+            print("Reputation: 1")
 
     def upvote(self, client_id, message_id):
         # TODO: Linkable ring signature + upvote
@@ -95,16 +137,3 @@ class Server():
     def downvote(self, client_id, message_id):
         # TODO: Linkable ring signature + downvote
         print("nope")
-
-    # We probably need to classify all the messages that we'll be receiving
-
-    def received_posted_message(self, message):
-        print("not yet implemented")
-    def received_voting_message(self, message):
-        print("not yet implemented")
-    def received_ledger_update(self, message):
-        print("not yet implemented")
-        # there will be different reasons for the ledger being updated:
-        # - received a broadcast to update the ledger
-        # - received a broadcast to propose a change to the ledger
-        # -----> would then need to try to get a signature for the proposed block
