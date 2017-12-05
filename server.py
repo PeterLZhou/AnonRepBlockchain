@@ -178,15 +178,15 @@ class Server():
         self.sendtocoordinator(new_message)
 
     def newvoteupdateledger(self, message): # this is the leader server updating the ledger
-        self.MY_LEDGER.logvote(message['vote'])
+        new_block = self.MY_LEDGER.logvote(message['vote'])
         new_message = {
             'msg_type': "LEDGER_UPDATE",
-            'ledger': self.MY_LEDGER
+            'new_block': new_block
         }
         self.sendtocoordinator(new_message)
 
     def mergeledger(self, message):
-        self.MY_LEDGER = message['ledger']
+        self.MY_LEDGER.appendblock(message['new_block'])
 
     def sendvotestoclients(self, vote_list, gen_powered):
         new_wallet_list = []
