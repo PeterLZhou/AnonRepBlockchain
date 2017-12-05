@@ -58,13 +58,21 @@ class Server():
                 nym_map = data['nym_map']
                 gen_powered = data['gen_powered']
                 self.shownyms(nym_map)
-<<<<<<< HEAD
-            elif data['msg_type'] == 'VOTE': # or block chain stuff?
-                self.receivedvote(data)
-=======
+            elif data['msg_type'] == 'VOTE_RESULT':
+                vote_list = data['votes'] # a list of objects with structure : {text, id, nyms, votes}
+                new_public_keys = self.sendvotestoclients(vote_list)
+                for public_key in new_public_keys:
+                    newdict = dict()
+                    newdict['msg_type'] = 'NEW_WALLET'
+                    newdict['public_key'] = public_key
+                    sendtocoordinator(newdict)
+            elif data['msg_type'] == 'MESSAGE_BROADCAST':
+                text = data['text']
+                msg_id = data['id']
+                nyms = data['nyms']
+                self.showmessage(text, msg_id, nyms)
             elif data['msg_type'] == 'SERVER_JOIN_REPLY':
                 print("Server join status: ", data["status"])
->>>>>>> 0e26795500013b78c54b93b2658d001f250ebc56
 
     def send(self, data, ip_addr, port):
         util.sendDict(data, ip_addr, port, self.receivesocket)
@@ -115,7 +123,7 @@ class Server():
         self.MY_CLIENTS[new_client.client_id] = new_client
         print("Server: Client {} created".format(new_client.client_id))
         data = dict()
-        data['msg_type'] = 'NEW_WALLET'
+        data['msg_type'] = 'NEW_WALLETS'
         data['public_key'] = new_client.wallets[0]['public_key']
         self.sendtocoordinator(data)
 
@@ -138,7 +146,7 @@ class Server():
 
     def shownyms(self, nym_map):
         for nym in nym_map:
-            print(nym)
+            print("{0}: Reputation 1".format(nym))
             print("Reputation: 1")
 
     def vote(self, client_id, message_id, vote):
@@ -152,10 +160,16 @@ class Server():
         }
         self.sendtocoordinator(new_message)
 
-    def receivedvote(self, message):
-        pass
+    def sendvotestoclients(self, vote_list, gen_powered):
+        new_wallet_list = []
+        for client in MY_CLIENTS:
+            new_wallet_list.extend(recalculateWallets(vote_list, gen_powered))
+        return new_wallet_list
 
     def serverjoin(self):
         mydict = dict()
         mydict['msg_type'] = 'SERVER_JOIN'
         self.sendtocoordinator(mydict)
+
+    def showmessage(self, text, msg_id, nyms):
+        print("ID: {0} Message: {1}. Signed by {2}", msg_id, text, nyms)
