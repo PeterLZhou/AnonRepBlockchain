@@ -28,7 +28,7 @@ class Coordinator():
         self.NEXT_PHASE = [SERVER_CONFIG, READY_FOR_NEW_ROUND, ANNOUNCE, MESSAGE_SEND, MESSAGE_BROADCAST, VOTE, REVERTNYM]
         self.current_phase_start = time.clock()
 
-        self.gen = g
+        self.gen = generator
         self.p = modulus
         self.known_servers = []
         self.pending_servers = []
@@ -38,7 +38,7 @@ class Coordinator():
         self.aggregated_messages = []
         self.wallet_specific_messages = []
         self.round_votes = {}
-        self.current_phase = READY_FOR_NEW_ROUND
+        self.current_phase = SERVER_CONFIG
         self.connected = False
         # store highest reputation from last round, broadcast with READ_FOR_NEW_ROUND
         self.last_highest_rep = -1
@@ -56,6 +56,7 @@ class Coordinator():
         # finish tasks before current phase ends
         if self.current_phase == VOTE:
             # split phase begins here
+            pass
 
         self.current_phase = self.NEXT_PHASE[(self.current_phase + 1) % len(self.NEXT_PHASE)]
         # more phase handling code
@@ -227,16 +228,17 @@ class Coordinator():
         # @Peter: I need a readData method that reads a dictionary, returning
         # None if no data is received within `timeout` seconds. Serialize the
         # data using json to send and received dicts
-        data, addr = self.receivesocket.recvfrom(1000000)
-        new_data = util.readDict(data)
-        sender_ip, sender_port = addr
-        if not new_data:
-            continue
+        while True:
+            data, addr = self.receivesocket.recvfrom(1000000)
+            new_data = util.readDict(data)
+            sender_ip, sender_port = addr
+            if not new_data:
+                continue
 
-        # handle the message
-        if new_data['msg_type'] == "SERVER_JOIN":
-            handleServerJoin(sender_ip, sender_port)
-        elif new_data['msg_type'] == "NEW_MESSAGE":
-            pass
-        elif new_data['msg_type'] == "NEW_VOTE":
-            handleVote(new_data)
+            # handle the message
+            if new_data['msg_type'] == "SERVER_JOIN":
+                handleServerJoin(sender_ip, sender_port)
+            elif new_data['msg_type'] == "NEW_MESSAGE":
+                pass
+            elif new_data['msg_type'] == "NEW_VOTE":
+                handleVote(new_data)
