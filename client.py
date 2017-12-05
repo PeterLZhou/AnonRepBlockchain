@@ -99,5 +99,5 @@ class Client():
     def getnyms(self, reputation, gen_powered):
         nym_list = list()
         for i in range(reputation):
-            nym_list.append(util.modexp(gen_powered, self.wallets[i]['private_key'], P)
+            nym_list.append(util.modexp(gen_powered, self.wallets[i]['private_key'], P))
         return nym_list

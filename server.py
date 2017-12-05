@@ -109,7 +109,7 @@ class Server():
             print("Not enough reputation points! Message cannot be posted!")
             return
 
-            wallet_signatures = self.MY_CLIENTS[client_id].getnyms(reputation, self.CURRENT_GEN_POWERED)
+        wallet_signatures = self.MY_CLIENTS[client_id].getnyms(reputation, self.CURRENT_GEN_POWERED)
 
         new_message = {
             'msg_type': "MESSAGE",
@@ -190,7 +190,7 @@ class Server():
         self.sendtocoordinator(mydict)
 
     def showmessage(self, text, msg_id, nyms):
-        print("ID: {0} Message: {1}. Signed by {2}", msg_id, text, nyms)
+        print("ID: {0} Message: {1}. Signed by {2}".format(msg_id, text, nyms))
 
     def proofofwork(self, hash):
         salt = 0
