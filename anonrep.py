@@ -42,10 +42,10 @@ while True:
     elif args[0] == 'upvote':
         client_id = args[1]
         message_id = args[2]
-        my_server.upvote(client_id, message_id)
+        my_server.vote(client_id, message_id, 1)
     elif args[0] == 'downvote':
         client_id = args[1]
         message_id = args[2]
-        my_server.downvote(client_id, message_id)
+        my_server.vote(client_id, message_id, -1)
     elif args[0] == 'newclient':
         my_server.newclient()
