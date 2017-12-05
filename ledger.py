@@ -41,6 +41,16 @@ class Ledger:
         '''
         prev_hash = self.BLOCKS[-1]
         salt = None
+        prev_char = ""
+        count = 0
+        valid_salt = False
+        while not valid_salt:
+            if count > 1114112:
+                prev_char += chr(0)
+                count = 0
+            salt = prev_char + chr(count)
+            (prev_hash + salt)
+            count += 1
 
         return salt
 
