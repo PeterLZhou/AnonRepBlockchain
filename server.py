@@ -60,6 +60,12 @@ class Server():
                 gen_powered = data['gen_powered']
                 self.CURRENT_GEN_POWERED = gen_powered
                 self.shownyms(nym_map)
+            elif data['msg_type'] == 'SERVER_JOIN_REPLY':
+                print("Server join status: ", data["status"])
+            elif data['msg_type'] == 'LEDGER_UPDATE': # a new block has been appended to the blockchain
+                self.mergeledger(data)
+            elif data['msg_type'] == 'NEW_VOTE': # this server has been selected to be the leader
+                self.newvoteupdateledger(data)
             elif data['msg_type'] == 'VOTE_RESULT':
                 vote_list = data['votes'] # a list of objects with structure : {text, id, nyms, votes}
                 new_public_keys = self.sendvotestoclients(vote_list)
@@ -152,12 +158,24 @@ class Server():
         # get message
         message = message_id
         lrs = util.LRSsign() # (signing_key, public_key_idx, message, public_key_list)
-        self.MY_LEDGER.logvote(lrs, message_id, vote)
         new_message = {
-            'msg_type': "LEDGER",
+            'msg_type': "VOTE",
+            'signature': lrs,
+            'msg_id': message_id,
+            'vote': vote,
+        }
+        self.sendtocoordinator(new_message)
+
+    def newvoteupdateledger(self, message): # this is the leader server updating the ledger
+        self.MY_LEDGER.logvote(message['vote'])
+        new_message = {
+            'msg_type': "LEDGER_UPDATE",
             'ledger': self.MY_LEDGER
         }
         self.sendtocoordinator(new_message)
+
+    def mergeledger(self, message):
+        self.MY_LEDGER = message['ledger']
 
     def sendvotestoclients(self, vote_list, gen_powered):
         new_wallet_list = []
