@@ -3,42 +3,52 @@ class Ledger:
         # each block is a dictionary as follows:
         '''
             {
-                "Sender": pseudonym or ID of the user that is sending the reputation points
-                "Receiver": pseudonym or ID of the user that is receiving the reputation points
-                "Points": the amount of reputation points that is being sent
-                "Signature": the signature that verifies the block has not be tampered with
+                "link_ring_sig": linkable-ring-signature of the client making the upvote
+                "msg_id": message id of the message that is being voted on
+                "points": the amount of reputation points that is being sent
+                "signature": the signature that verifies the block has not be tampered with
                             signature is none if the block is in the awaiting list
             }
         '''
-        self.blocks = []
-        self.awaiting = []
-
-    def send_reputation(self, sender, receiver, amount):
+        # ALL_VOTES will be an aggregate of all the votes on the messages and will be a dict as follows:
         '''
-            used for splitting wallets
+            {
+                "msg_id": vote_count
+            }
+        '''
+
+        self.BLOCKS = []
+        self.AWAITING = []
+        self.ALL_VOTES = {}
+
+    def log_vote(self, link_ring_sig, msg_id, vote):
+        '''
+            processing a vote
         '''
         new_block = {
-            "Sender": sender,
-            "Receiver": receiver,
-            "Points": amount
+            "link_ring_sig": link_ring_sig,
+            "msg_id": msg_id,
+            "points": vote
+            "signature": None
         }
-        return self.propose_block(new_block)
+        self.awaiting.append(new_block)
+        # return self.propose_block(new_block)
 
-    def propose_block(self, new_block):
-        # verify that the transaction of the block is legal by looking at the history of the chain
-        # returns True if the transaction is legal, False otherwise
-        sender_value = 0
-        for block in self.blocks:
-            if block["Sender"] == new_block["Sender"]:
-                sender_value -= block["Points"]
-            if block["Receiver"] == new_block["Sender"]:
-                sender_value += block["Points"]
+    # def propose_block(self, new_block):
+    #     # verify that the transaction of the block is legal by looking at the history of the chain
+    #     # returns True if the transaction is legal, False otherwise
+    #     sender_value = 0
+    #     for block in self.blocks:
+    #         if block["Sender"] == new_block["Sender"]:
+    #             sender_value -= block["Points"]
+    #         if block["Receiver"] == new_block["Sender"]:
+    #             sender_value += block["Points"]
 
-        if sender_value >= new_block["Points"]:
-            self.awaiting.append(new_block)
-            return True
-        else:
-            return False
+    #     if sender_value >= new_block["Points"]:
+    #         self.awaiting.append(new_block)
+    #         return True
+    #     else:
+    #         return False
         # ledger needs to be broadcasted
 
     def sign_block(self, new_block):
