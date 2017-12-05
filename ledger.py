@@ -21,7 +21,7 @@ class Ledger:
         self.AWAITING = []
         self.ALL_VOTES = {}
 
-    def log_vote(self, link_ring_sig, msg_id, vote):
+    def logvote(self, link_ring_sig, msg_id, vote):
         '''
             processing a vote
         '''
@@ -51,7 +51,7 @@ class Ledger:
     #         return False
         # ledger needs to be broadcasted
 
-    def sign_block(self, new_block):
+    def signblock(self, new_block):
         '''
             should be called by the server so that the results can be broadcasted
             We can make this signing as easy as possible
@@ -59,7 +59,7 @@ class Ledger:
         signature = None
         return signature
 
-    def process_ledger(self, new_ledger):
+    def processledger(self, new_ledger):
         ''' decide if new ledger is more up to date than current ledger
         '''
         # decide whether or not new_ledger is more up-to-date, i.e. it's longer
@@ -68,15 +68,14 @@ class Ledger:
         self.awaiting = new_ledger.awaiting
         pass
 
-    def _verify_signature(self, new_block, signature):
+    def verifysignature(self, new_block, signature):
         '''
             We can make this crypto as easy or as difficult as we want
         '''
         print("Automatic signature approval")
         return True
 
-    def _append_block(self, new_block, signature):
-        # verify legality of block
-        if self.verify_signature(new_block, signature):
+    def appendblock(self, new_block, signature):
+        if self.verifysignature(new_block, signature):
             self.blocks.append(new_block)
         # ledger needs to be broadcasted

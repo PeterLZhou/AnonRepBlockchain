@@ -58,6 +58,8 @@ class Server():
                 nym_map = data['nym_map']
                 gen_powered = data['gen_powered']
                 self.shownyms(nym_map, gen_powered)
+            elif data['msg_type'] == 'VOTE': # or block chain stuff?
+                self.receivedvote(data)
             elif data['msg_type'] == 'SERVER_JOIN_REPLY':
                 print("Server join status: ", data["status"])
 
@@ -93,7 +95,8 @@ class Server():
             wallet_signatures.append(self.MY_CLIENTS[client_id].wallets[i]['public_key'])
 
         new_message = {
-            'msg_type': message,
+            'msg_type': "MESSAGE",
+            'text_msg': message,
             'signatures': wallet_signatures,
         }
         # Post to coordinator
@@ -137,12 +140,19 @@ class Server():
                 print("expected:", util.modexp(gen_powered, self.MY_CLIENTS[client].wallets[0]['private_key'], MODULO))
             print("Reputation: 1")
 
-    def upvote(self, client_id, message_id):
-        # TODO: Linkable ring signature + upvote
-        print("nope")
-    def downvote(self, client_id, message_id):
-        # TODO: Linkable ring signature + downvote
-        print("nope")
+    def vote(self, client_id, message_id, vote):
+        # get message
+        message = message_id
+        lrs = util.LRSsign() # (signing_key, public_key_idx, message, public_key_list)
+        self.MY_LEDGER.logvote(lrs, message_id, vote)
+        new_message = {
+            'msg_type': "LEDGER",
+            'ledger': self.MY_LEDGER
+        }
+        self.sendtocoordinator(new_message)
+
+    def receivedvote(self, message):
+        pass
 
     def serverjoin(self):
         mydict = dict()
