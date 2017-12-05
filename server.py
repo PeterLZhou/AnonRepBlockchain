@@ -7,6 +7,7 @@ from ledger import Ledger
 
 #We hardcode all the available ports to make things easy
 ALL_PORTS = [5000, 5001, 5002]
+COORDINATOR_PORT = 5003
 
 class Server():
     def __init__(self):
@@ -30,9 +31,8 @@ class Server():
                 self.MY_PORT += 1
 
         ### CLIENT CREATION ###
-        # Everyone creates one client on startup
         self.MY_CLIENTS = {}
-        self.newclient();
+        self.newclient()
 
         ### MESSAGE CREATION ###
         # Everyone has their own log of messages, every time we get a message append to log
@@ -45,20 +45,21 @@ class Server():
     def listen(self):
         while True:
             data, addr = self.receivesocket.recvfrom(1024) # buffer size is 1024 bytes
-            data = data.decode()
-            self.MY_MESSAGES.append(data)
-            # we need to classify the different types of messages that the server's going to receive
-            # are we just going to send jank strings or try to send dictionaries?
-            print("I got it: ", data)
+            data = util.deserialize(data).decode()
+            if data['msg_type'] == 'SHUFFLE_START':
+                client_ids = data['client_id']
+                public_keys = data['public_key']
+            elif data['msg_type'] == 
+
 
     # Send a message to every port which is not yourself
-    def sendall(self):
-        client_id = "None"
-        message = "TEST MESSAGE"
-        self.MY_MESSAGES[client_id] = message
+    def sendall(self, data):
         for port in ALL_PORTS:
             if port != self.MY_PORT:
-                self.sendsocket.sendto(message.encode(), (self.MY_IP, port))
+                util.sendDict(data, self.MY_IP, port, self.sendsocket)
+
+    def sendtocoordinator(self, data):
+        util.sendDict(data, self.MY_IP, COORDINATOR_PORT, self.sendsocket)
 
     def postmessage(self, client_id, message):
         if client_id not in self.MY_CLIENTS:
@@ -81,9 +82,12 @@ class Server():
     def newclient(self):
         #TODO, decide on a naming scheme for client
         new_client = Client(str(self.MY_PORT) + str(random.randint(1, 100)))
-        self.MY_CLIENTS[new_client.client_id] = new_client
-        print("Client {} added".format(new_client.client_id))
-        print("Client private key: ", new_client.private_key)
+        print("Server: Client {} created".format(new_client.client_id))
+        data = dict()
+        data['type'] = 'new_client'
+        data['client_id'] = new_client.client_id
+        data['public_key'] = new_client.public_key
+        self.sendtocoordinator(data)
 
     def upvote(self, client_id, message_id):
         # TODO: Linkable ring signature + upvote

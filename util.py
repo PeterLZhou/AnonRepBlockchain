@@ -9,13 +9,14 @@ from linkable_ring_signature import ring_signature, verify_ring_signature
 from ecdsa.util import randrange
 from ecdsa.curves import SECP256k1
 
-def sendDict(dict, ip_addr, port):
-    print("Not implemented yet.")
-    return
+#Sends dict as serialized data
+def sendDict(data, ip_addr, port, sendsocket):
+    serializeddict = serialize(data)
+    sendsocket.sendto(serializeddict, (ip_addr, port))
 
-def readDict(timeout = 0.5):
-    print("Not implemented yet.")
-    # return dictionary_read, sender_ip, sender_port
+#Returns clean dictionary
+def readDict(data):
+    return data.decode()
 
 def serialize(obj):
 	return pickle.dumps(obj)

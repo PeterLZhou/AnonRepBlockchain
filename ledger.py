@@ -6,7 +6,7 @@ class Ledger:
                 "Sender": pseudonym or ID of the user that is sending the reputation points
                 "Receiver": pseudonym or ID of the user that is receiving the reputation points
                 "Points": the amount of reputation points that is being sent
-                "Signature": the signature that verifies the block has not be tampered with 
+                "Signature": the signature that verifies the block has not be tampered with
                             signature is none if the block is in the awaiting list
             }
         '''
@@ -43,7 +43,7 @@ class Ledger:
 
     def sign_block(self, new_block):
         '''
-            should be called by the server so that the results can be broadcasted 
+            should be called by the server so that the results can be broadcasted
             We can make this signing as easy as possible
         '''
         signature = None
