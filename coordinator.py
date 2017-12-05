@@ -90,52 +90,57 @@ class Coordinator():
 
     def handleMessage(self, message_dict):
 
-        new_wallet_msg = {}
-        new_wallet_msg["text"] = message_dict["text"]
-        new_wallet_msg["signature"] = message_dict["signature"]
-        new_wallet_msg["nym"] = message_dict["nym"]
+        new_aggr_msg = {}
+        new_aggr_msg["text"] = message_dict["text"]
+        new_aggr_msg["signature"] = None # change later
+        new_aggr_msg["nyms"] = message_dict["signatures"] # actually the public keys
+        new_aggr_msg["id"] = len(self.aggregated_messages) + 1
 
         # verify signature (and send reply? don't think we need this here)
 
-        self.wallet_specific_messages.append(new_wallet_msg)
+        self.aggregated_messages.append(new_aggr_msg)
+        for server_ip, server_port in self.known_servers:
+            pm = new_aggr_msg
+            pm["msg_type"] = "MESSAGE_BROADCAST"
+            util.sendDict(pm, server_ip, server_port, self.receivesocket)
         return
 
-    def handleMessageBroadcast(self):
-
-        # aggregate all messages with same text, this is a very stupid way to
-        # do this currently
-        if len(self.wallet_specific_messages) == 0:
-            return
-
-        sorted_messages = sorted(self.wallet_specific_messages, key=lambda k: k['text'])
-        new_aggr_message = {}
-        new_aggr_message['text'] = sorted_messages[0]['text']
-        new_aggr_message['id'] = len(self.aggregated_messages) + 1
-        new_aggr_message['nyms'] = [sorted_messages[0]['nym']] # do we need to store signatures? unclear
-
-        for wallet_msg in sorted_messages:
-            if wallet_msg['text'] == new_aggr_message['text']:
-                new_aggr_message['nyms'].append(wallet_msg['nym'])
-            else:
-                self.aggregated_messages.append(new_aggr_message)
-                new_aggr_message['text'] = wallet_msg['text']
-                new_aggr_message['id'] = len(self.aggregated_messages) + 1
-                new_aggr_message['nyms'] = [wallet_msg['nym']]
-
-        self.aggregated_messages.append(new_aggr_message)
-
-        # broadcast all messages to each server
-        for server_ip, server_port in self.known_servers:
-            for message in self.aggregated_messages:
-                pm = message
-                pm["msg_type"] = "MESSAGE_BROADCAST"
-                util.sendDict(pm, server_ip, server_port, self.receivesocket)
+    # def handleMessageBroadcast(self):
+    #
+    #     # aggregate all messages with same text, this is a very stupid way to
+    #     # do this currently
+    #     if len(self.wallet_specific_messages) == 0:
+    #         return
+    #
+    #     sorted_messages = sorted(self.wallet_specific_messages, key=lambda k: k['text'])
+    #     new_aggr_message = {}
+    #     new_aggr_message['text'] = sorted_messages[0]['text']
+    #     new_aggr_message['id'] = len(self.aggregated_messages) + 1
+    #     new_aggr_message['nyms'] = [sorted_messages[0]['nym']] # do we need to store signatures? unclear
+    #
+    #     for wallet_msg in sorted_messages:
+    #         if wallet_msg['text'] == new_aggr_message['text']:
+    #             new_aggr_message['nyms'].append(wallet_msg['nym'])
+    #         else:
+    #             self.aggregated_messages.append(new_aggr_message)
+    #             new_aggr_message['text'] = wallet_msg['text']
+    #             new_aggr_message['id'] = len(self.aggregated_messages) + 1
+    #             new_aggr_message['nyms'] = [wallet_msg['nym']]
+    #
+    #     self.aggregated_messages.append(new_aggr_message)
+    #
+    #     # broadcast all messages to each server
+    #     for server_ip, server_port in self.known_servers:
+    #         for message in self.aggregated_messages:
+    #             pm = message
+    #             pm["msg_type"] = "MESSAGE_BROADCAST"
+    #             util.sendDict(pm, server_ip, server_port, self.receivesocket)
 
     def handleVote(self, vote_dict):
 
         vote_text = vote_dict["text"]
         sig = vote_dict["signature"]
-        sender_nym = vote_dict["nym"]
+        # sender_nym = vote_dict["nym"]
 
         # check if duplicate vote using linkable ring signature
 
