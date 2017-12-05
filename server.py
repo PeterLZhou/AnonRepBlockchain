@@ -58,13 +58,12 @@ class Server():
                 nym_map = data['nym_map']
                 gen_powered = data['gen_powered']
                 self.shownyms(nym_map)
-<<<<<<< HEAD
-            elif data['msg_type'] == 'VOTE': # or block chain stuff?
-                self.receivedvote(data)
-=======
             elif data['msg_type'] == 'SERVER_JOIN_REPLY':
                 print("Server join status: ", data["status"])
->>>>>>> 0e26795500013b78c54b93b2658d001f250ebc56
+            elif data['msg_type'] == 'LEDGER_UPDATE': # a new block has been appended to the blockchain
+                self.mergeledger(data)
+            elif data['msg_type'] == 'NEW_BLOCK_APPENDED': # this server has been selected to be the leader
+                self.updateledger(data)
 
     def send(self, data, ip_addr, port):
         util.sendDict(data, ip_addr, port, self.receivesocket)
@@ -145,15 +144,24 @@ class Server():
         # get message
         message = message_id
         lrs = util.LRSsign() # (signing_key, public_key_idx, message, public_key_list)
-        self.MY_LEDGER.logvote(lrs, message_id, vote)
         new_message = {
-            'msg_type': "LEDGER",
+            'msg_type': "VOTE",
+            'signature': lrs,
+            'msg_id': message_id,
+            'vote': vote,
+        }
+        self.sendtocoordinator(new_message)
+
+    def newvoteupdateledger(self, message):
+        self.MY_LEDGER.logvote(message['vote'])
+        new_message = {
+            'msg_type': "NEW_BLOCK_APPENDED",
             'ledger': self.MY_LEDGER
         }
         self.sendtocoordinator(new_message)
 
-    def receivedvote(self, message):
-        pass
+    def mergeledger(self, message):
+        self.MY_LEDGER = message['ledger']
 
     def serverjoin(self):
         mydict = dict()
