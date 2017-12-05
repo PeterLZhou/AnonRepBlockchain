@@ -61,13 +61,14 @@ class Coordinator():
         self.current_phase = self.NEXT_PHASE[(self.current_phase + 1) % len(self.NEXT_PHASE)]
         # more phase handling code
         # most importantly, need to signal each server that new phase has begun
-
         # finish tasks before new phase starts
         if self.current_phase == VOTE:
             pm = {}
             pm['msg_type'] = "VOTE_START"
             for server_ip, server_port in self.known_servers:
                 util.sendDict(pm, server_ip, server_port, self.receivesocket)
+        elif self.current_phase == READY_FOR_NEW_ROUND:
+            self.startShuffle()
 
     def startShuffle(self):
 
@@ -81,6 +82,8 @@ class Coordinator():
         pm["g"] = self.gen
         pm["p"] = self.p
         pm["server_list"] = self.known_servers
+
+        print("Starting shuffle...")
 
         server_ip, server_port = self.known_servers[0]
         util.sendDict(pm, server_ip, server_port, self.receivesocket)
@@ -175,7 +178,8 @@ class Coordinator():
         wallet_pub_key = wallet_dict["public_key"]
 
         # do error checking to see if sender was allowed to send this wallet
-        self.original_reputation_map.append(wallet_pub_key)
+        self.original_reputation_map[wallet_pub_key] = 1
+        print("Registered new wallet", wallet_pub_key)
 
 
     def handleServerJoin(self, server_ip, server_port):
@@ -189,9 +193,9 @@ class Coordinator():
                 util.sendDict(pm, server_ip, server_port, self.receivesocket)
                 return
 
-        if len(self.known_servers) > 0:
-            pm["prev_hop_ip"], pm["prev_hop_port"] = self.known_servers[-1]
-            self.known_servers.append((server_ip, server_port))
+        self.known_servers.append((server_ip, server_port))
+        if len(self.known_servers) > 1:
+            pm["prev_hop_ip"], pm["prev_hop_port"] = self.known_servers[-2]
 
             next_hop_msg["msg_type"] = "SERVER_NEXT_HOP_UPDATE"
             pm["next_hop_ip"], pm["next_hop_port"] = self.known_servers[-1]
@@ -199,14 +203,15 @@ class Coordinator():
 
             util.sendDict(next_hop_msg, prev_ip, prev_port, self.receivesocket)
 
+
         util.sendDict(pm, server_ip, server_port, self.receivesocket)
         print("New server joined: " ,server_ip, server_port)
 
     # handle the results of shuffle phase from last server
     def handleAnnouncement(self, announce_dict):
 
-        self.nym_map = announce_dict["shuffled_nyms"]
-        gen_powered = announce_dict["gen_powered"]
+        self.nym_map = announce_dict["wallet_list"]
+        gen_powered = announce_dict["g"]
         pm = {}
         pm["nym_map"] = self.nym_map
         pm["msg_type"] = "NYM_ANNOUNCE"
@@ -243,3 +248,12 @@ class Coordinator():
                 pass
             elif new_data['msg_type'] == "NEW_VOTE":
                 self.handleVote(new_data)
+            elif new_data['msg_type'] == "NEW_WALLET":
+                if self.current_phase != SERVER_CONFIG:
+                    continue
+                self.registerNewWallet(new_data)
+            elif new_data['msg_type'] == "SHUFFLE_END":
+                if self.current_phase != READY_FOR_NEW_ROUND:
+                    continue
+                self.startNextRound()
+                self.handleAnnouncement(new_data)

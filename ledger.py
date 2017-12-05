@@ -28,7 +28,7 @@ class Ledger:
         new_block = {
             "link_ring_sig": link_ring_sig,
             "msg_id": msg_id,
-            "points": vote
+            "points": vote,
             "signature": None
         }
         self.awaiting.append(new_block)

@@ -8,6 +8,7 @@ from ledger import Ledger
 #We hardcode all the available ports to make things easy
 ALL_PORTS = [5000, 5001, 5002]
 COORDINATOR_PORT = 5003
+MODULO = 78259045243861432232475255071584746141480579030179831349765025070491917900839
 
 class Server():
     def __init__(self):
@@ -32,6 +33,7 @@ class Server():
                 print("Port {} is probably in use".format(self.MY_PORT))
                 self.MY_PORT += 1
 
+        self.serverjoin()
         ### CLIENT CREATION ###
         self.MY_CLIENTS = {}
         self.newclient()
@@ -39,8 +41,6 @@ class Server():
         ### LEDGER CREATION ###
         ### we can have the ledgers be in just the clients or just the servers or both
         self.MY_LEDGER = Ledger()
-
-        self.serverjoin()
 
     def listen(self):
         while True:
@@ -57,7 +57,7 @@ class Server():
             elif data['msg_type'] == 'NYM_ANNOUNCE':
                 nym_map = data['nym_map']
                 gen_powered = data['gen_powered']
-                self.shownyms(nym_map)
+                self.shownyms(nym_map, gen_powered)
             elif data['msg_type'] == 'SERVER_JOIN_REPLY':
                 print("Server join status: ", data["status"])
 
@@ -113,7 +113,7 @@ class Server():
         data['public_key'] = new_client.wallets[0]['public_key']
         self.sendtocoordinator(data)
 
-    def shuffle(wallet_list, g, p, server_list):
+    def shuffle(self, wallet_list, g, p, server_list):
         server_idx = server_list.index((self.MY_IP, self.MY_PORT))
         new_wallet_list = [(wallet ** self.randomnumber) % p for wallet in wallet_list]
         new_g = (g ** self.randomnumber) % p
@@ -130,9 +130,11 @@ class Server():
         new_dict['server_list'] = server_list
         self.send(new_dict, receiver[0], receiver[1])
 
-    def shownyms(self, nym_map):
+    def shownyms(self, nym_map, gen_powered):
         for nym in nym_map:
             print(nym)
+            for client in self.MY_CLIENTS:
+                print("expected:", util.modexp(gen_powered, self.MY_CLIENTS[client].wallets[0]['private_key'], MODULO))
             print("Reputation: 1")
 
     def upvote(self, client_id, message_id):
