@@ -42,6 +42,7 @@ class Coordinator():
         self.connected = False
         # store highest reputation from last round, broadcast with READ_FOR_NEW_ROUND
         self.last_highest_rep = -1
+        self.num_rounds = 0
 
         try:
             self.receivesocket.bind((self.my_ip, self.my_port))
@@ -66,6 +67,22 @@ class Coordinator():
             pm['msg_type'] = "VOTE_START"
             for server_ip, server_port in self.known_servers:
                 util.sendDict(pm, server_ip, server_port)
+
+    def startShuffle(self):
+
+        # signal to first server to start shuffle phase
+        if len(self.known_servers) == 0:
+            return
+
+        pm = {}
+        pm["msg_type"] = "SHUFFLE_START"
+        pm["wallet_list"] = self.original_reputation_map
+        pm["g"] = self.gen
+        pm["p"] = self.p
+        pm["server_list"] = self.known_servers
+
+        server_ip, server_port = self.known_servers[0]
+        util.sendDict(pm, server_ip, server_port)
 
     def handleMessage(self, message_dict):
 
@@ -133,6 +150,33 @@ class Coordinator():
             else:
                 self.round_votes[msg_id] = vote
 
+    # When voting phase is over, blockchain contains a list of transactions
+    # that determine how many votes a message received. Aggregate them and broadcast
+    # to all servers
+    def aggregateVotes(self, vote_dict):
+
+        blockchain = vote_dict["blockchain"]
+
+        for (idx, msg) in enumerate(self.aggregated_messages):
+            msg_votes = util.aggregateBlockchain(msg["id"])
+            self.round_votes[msg_id] = min(msg_votes, -len(msg["nyms"]))
+            msg["votes"] = self.round_votes[msg_id]
+            self.aggregated_messages[idx] = msg
+
+        for (server_ip, server_port) in self.known_servers:
+            pm = {}
+            pm["msg_type"] = "VOTE_RESULT"
+            pm["votes"] = self.aggregated_messages
+            util.sendDict(pm, server_ip, server_port)
+
+    def registerNewWallet(self, wallet_dict):
+
+        wallet_pub_key = wallet_dict["public_key"]
+
+        # do error checking to see if sender was allowed to send this wallet
+        self.original_reputation_map.append(wallet_pub_key)
+
+
     def handleServerJoin(self, server_ip, server_port):
         pm = {}
         next_hop_msg = {}
@@ -155,6 +199,20 @@ class Coordinator():
             util.sendDict(next_hop_msg, prev_ip, prev_port)
 
         util.sendDict(pm, server_ip, server_port)
+
+    # handle the results of shuffle phase from last server
+    def handleAnnouncement(self, announce_dict):
+
+        self.nym_map = announce_dict["shuffled_nyms"]
+        pm = {}
+        pm["nym_map"] = self.nym_map
+        pm["msg_type"] = "NYM_ANNOUNCE"
+        pm["g"] = self.gen
+        pm["p"] = self.p
+
+        for (ip, port) in self.known_servers:
+            util.sendDict(pm, ip, port)
+
 
     def listenAndCoordinate(self, phase_duration=5.0, timeout=0.1):
 
