@@ -227,7 +227,9 @@ class Coordinator():
         # @Peter: I need a readData method that reads a dictionary, returning
         # None if no data is received within `timeout` seconds. Serialize the
         # data using json to send and received dicts
-        new_data, sender_ip, sender_port = util.readDict(timeout=0.1)
+        data, addr = self.receivesocket.recvfrom(1000000)
+        new_data = util.readDict(data)
+        sender_ip, sender_port = addr
         if not new_data:
             continue
 

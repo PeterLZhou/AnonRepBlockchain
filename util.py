@@ -1,9 +1,7 @@
 import socket
 import threading
-from client import Client
 import time
 import json
-import util
 import pickle
 from linkable_ring_signature import ring_signature, verify_ring_signature
 from ecdsa.util import randrange
