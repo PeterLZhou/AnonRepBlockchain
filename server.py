@@ -123,7 +123,7 @@ class Server():
         self.MY_CLIENTS[new_client.client_id] = new_client
         print("Server: Client {} created".format(new_client.client_id))
         data = dict()
-        data['msg_type'] = 'NEW_WALLETS'
+        data['msg_type'] = 'NEW_WALLET'
         data['public_key'] = new_client.wallets[0]['public_key']
         self.sendtocoordinator(data)
 
@@ -144,7 +144,8 @@ class Server():
         new_dict['server_list'] = server_list
         self.send(new_dict, receiver[0], receiver[1])
 
-    def shownyms(self, nym_map, gen_powered):
+    def shownyms(self, nym_map):
+        print("Here")
         for nym in nym_map:
             print("{0}: Reputation 1".format(nym))
 
@@ -171,4 +172,4 @@ class Server():
         self.sendtocoordinator(mydict)
 
     def showmessage(self, text, msg_id, nyms):
-        print("ID: {0} Message: {1}. Signed by {2}", msg_id, text, nyms)
+        print("ID: {0} Message: {1}. Signed by {2}".format(msg_id, text, nyms))
