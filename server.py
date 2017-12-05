@@ -23,6 +23,7 @@ class Server():
         # Creates a socket at localhost and next available 5000 client
         self.MY_IP = "127.0.0.1"
         self.MY_PORT = 5000
+        self.CURRENT_GEN_POWERED = None
         connected = False
         while not connected:
             try:
@@ -57,6 +58,7 @@ class Server():
             elif data['msg_type'] == 'NYM_ANNOUNCE':
                 nym_map = data['nym_map']
                 gen_powered = data['gen_powered']
+                self.CURRENT_GEN_POWERED = gen_powered
                 self.shownyms(nym_map)
             elif data['msg_type'] == 'VOTE_RESULT':
                 vote_list = data['votes'] # a list of objects with structure : {text, id, nyms, votes}
@@ -101,9 +103,7 @@ class Server():
             print("Not enough reputation points! Message cannot be posted!")
             return
 
-        wallet_signatures = []
-        for i in range(reputation):
-            wallet_signatures.append(self.MY_CLIENTS[client_id].wallets[i]['public_key'])
+            wallet_signatures = self.MY_CLIENTS[client_id].getnyms(reputation, self.CURRENT_GEN_POWERED)
 
         new_message = {
             'msg_type': "MESSAGE",
@@ -172,3 +172,6 @@ class Server():
 
     def showmessage(self, text, msg_id, nyms):
         print("ID: {0} Message: {1}. Signed by {2}", msg_id, text, nyms)
+
+    def proofofwork(self, hash):
+        salt = 0

@@ -95,3 +95,9 @@ class Client():
             }
             signed_messages.append(message_dict)
         return signed_messages
+
+    def getnyms(self, reputation, gen_powered):
+        nym_list = list()
+        for i in range(reputation):
+            nym_list.append(util.modexp(gen_powered, self.wallets[i]['private_key'], P)
+        return nym_list
