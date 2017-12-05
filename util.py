@@ -4,6 +4,7 @@ import time
 import json
 import pickle
 import elgamal
+import hashlib
 from linkable_ring_signature import ring_signature, verify_ring_signature
 from ecdsa.util import randrange
 from ecdsa.curves import SECP256k1
@@ -24,9 +25,7 @@ def deserialize(string):
 	return pickle.loads(string)
 
 def LRSsign(signing_key, public_key_idx, message, public_key_list):
-
-    signature = ring_signature(signing_key, public_key_idx, message, public_key_list)
-    return signature
+    return ring_signature(signing_key, public_key_idx, message, public_key_list)
 
 def LRSverify(message, public_key_list, signature):
     return verify_ring_signature(message, public_key_list, *signature)
@@ -37,12 +36,15 @@ def generatePrivateKey():
 def generatePublicKey(private_key):
     return SECP256k1.generator * private_key
 
-def modexp( base, exp, modulus ):
+def modexp(base, exp, modulus):
 	return pow(base, exp, modulus)
 
 #Returns a dict {publicKey: ..., privateKey: ...,}
 def generateWalletKeys():
     return elgamal.generate_keys()
+
+def sha256hash(key):
+    return hashlib.sha256(key).hexdigest()
 
 if __name__ == "__main__":
     ### TEST FOR LRS SIGN ###
