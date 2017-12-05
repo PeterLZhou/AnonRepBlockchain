@@ -1,10 +1,9 @@
 import socket
 import threading
-from client import Client
 import time
 import json
-import util
 import pickle
+import elgamal
 from linkable_ring_signature import ring_signature, verify_ring_signature
 from ecdsa.util import randrange
 from ecdsa.curves import SECP256k1
@@ -55,3 +54,14 @@ if __name__ == "__main__":
     public_key = generatePublicKey(private_key)
     print(private_key)
     print(public_key)
+    ### TEST FOR PUBLIC PRIVATE KEY ###
+    pair = elgamal.generate_keys()
+    print(pair)
+    print(pair['privateKey'].p)
+    print(pair['privateKey'].g)
+    print(pair['privateKey'].x)
+
+    cipher = elgamal.encrypt(pair['publicKey'], "This is the message I want to encrypt")
+    print(cipher)
+    plaintext = elgamal.decrypt(pair['privateKey'], cipher)
+    print(plaintext)
