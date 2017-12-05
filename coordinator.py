@@ -91,7 +91,7 @@ class Coordinator():
     def handleMessage(self, message_dict):
 
         new_aggr_msg = {}
-        new_aggr_msg["text"] = message_dict["text"]
+        new_aggr_msg["text"] = message_dict["text_msg"]
         new_aggr_msg["signature"] = None # change later
         new_aggr_msg["nyms"] = message_dict["signatures"] # actually the public keys
         new_aggr_msg["id"] = len(self.aggregated_messages) + 1
@@ -215,6 +215,9 @@ class Coordinator():
     # handle the results of shuffle phase from last server
     def handleAnnouncement(self, announce_dict):
 
+        print("Announcing nyms")
+        print(announce_dict["wallet_list"])
+
         self.nym_map = announce_dict["wallet_list"]
         gen_powered = announce_dict["g"]
         pm = {}
@@ -249,8 +252,8 @@ class Coordinator():
             # handle the message
             if new_data['msg_type'] == "SERVER_JOIN":
                 self.handleServerJoin(sender_ip, sender_port)
-            elif new_data['msg_type'] == "NEW_MESSAGE":
-                pass
+            elif new_data['msg_type'] == "MESSAGE":
+                self.handleMessage(new_data)
             elif new_data['msg_type'] == "NEW_VOTE":
                 self.handleVote(new_data)
             elif new_data['msg_type'] == "NEW_WALLET":

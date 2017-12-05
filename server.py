@@ -23,6 +23,7 @@ class Server():
         # Creates a socket at localhost and next available 5000 client
         self.MY_IP = "127.0.0.1"
         self.MY_PORT = 5000
+        self.CURRENT_GEN_POWERED = None
         connected = False
         while not connected:
             try:
@@ -59,6 +60,7 @@ class Server():
             elif data['msg_type'] == 'NYM_ANNOUNCE':
                 nym_map = data['nym_map']
                 gen_powered = data['gen_powered']
+                self.CURRENT_GEN_POWERED = gen_powered
                 self.shownyms(nym_map)
                 self.current_round = 'POST_MESSAGE'
             elif data['msg_type'] == 'SERVER_JOIN_REPLY':
@@ -115,9 +117,7 @@ class Server():
             print("Not enough reputation points! Message cannot be posted!")
             return
 
-        wallet_signatures = []
-        for i in range(reputation):
-            wallet_signatures.append(self.MY_CLIENTS[client_id].wallets[i]['public_key'])
+            wallet_signatures = self.MY_CLIENTS[client_id].getnyms(reputation, self.CURRENT_GEN_POWERED)
 
         new_message = {
             'msg_type': "MESSAGE",
@@ -137,7 +137,7 @@ class Server():
         self.MY_CLIENTS[new_client.client_id] = new_client
         print("Server: Client {} created".format(new_client.client_id))
         data = dict()
-        data['msg_type'] = 'NEW_WALLETS'
+        data['msg_type'] = 'NEW_WALLET'
         data['public_key'] = new_client.wallets[0]['public_key']
         self.sendtocoordinator(data)
 
@@ -158,7 +158,8 @@ class Server():
         new_dict['server_list'] = server_list
         self.send(new_dict, receiver[0], receiver[1])
 
-    def shownyms(self, nym_map, gen_powered):
+    def shownyms(self, nym_map):
+        print("Here")
         for nym in nym_map:
             print("{0}: Reputation 1".format(nym))
 
@@ -200,3 +201,6 @@ class Server():
 
     def showmessage(self, text, msg_id, nyms):
         print("ID: {0} Message: {1}. Signed by {2}", msg_id, text, nyms)
+
+    def proofofwork(self, hash):
+        salt = 0
