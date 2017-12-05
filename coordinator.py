@@ -61,13 +61,14 @@ class Coordinator():
         self.current_phase = self.NEXT_PHASE[(self.current_phase + 1) % len(self.NEXT_PHASE)]
         # more phase handling code
         # most importantly, need to signal each server that new phase has begun
-
         # finish tasks before new phase starts
         if self.current_phase == VOTE:
             pm = {}
             pm['msg_type'] = "VOTE_START"
             for server_ip, server_port in self.known_servers:
                 util.sendDict(pm, server_ip, server_port, self.receivesocket)
+        elif self.current_phase == READY_FOR_NEW_ROUND:
+            self.startShuffle()
 
     def startShuffle(self):
 
@@ -82,57 +83,64 @@ class Coordinator():
         pm["p"] = self.p
         pm["server_list"] = self.known_servers
 
+        print("Starting shuffle...")
+
         server_ip, server_port = self.known_servers[0]
         util.sendDict(pm, server_ip, server_port, self.receivesocket)
 
     def handleMessage(self, message_dict):
 
-        new_wallet_msg = {}
-        new_wallet_msg["text"] = message_dict["text"]
-        new_wallet_msg["signature"] = message_dict["signature"]
-        new_wallet_msg["nym"] = message_dict["nym"]
+        new_aggr_msg = {}
+        new_aggr_msg["text"] = message_dict["text"]
+        new_aggr_msg["signature"] = None # change later
+        new_aggr_msg["nyms"] = message_dict["signatures"] # actually the public keys
+        new_aggr_msg["id"] = len(self.aggregated_messages) + 1
 
         # verify signature (and send reply? don't think we need this here)
 
-        self.wallet_specific_messages.append(new_wallet_msg)
+        self.aggregated_messages.append(new_aggr_msg)
+        for server_ip, server_port in self.known_servers:
+            pm = new_aggr_msg
+            pm["msg_type"] = "MESSAGE_BROADCAST"
+            util.sendDict(pm, server_ip, server_port, self.receivesocket)
         return
 
-    def handleMessageBroadcast(self):
-
-        # aggregate all messages with same text, this is a very stupid way to
-        # do this currently
-        if len(self.wallet_specific_messages) == 0:
-            return
-
-        sorted_messages = sorted(self.wallet_specific_messages, key=lambda k: k['text'])
-        new_aggr_message = {}
-        new_aggr_message['text'] = sorted_messages[0]['text']
-        new_aggr_message['id'] = len(self.aggregated_messages) + 1
-        new_aggr_message['nyms'] = [sorted_messages[0]['nym']] # do we need to store signatures? unclear
-
-        for wallet_msg in sorted_messages:
-            if wallet_msg['text'] == new_aggr_message['text']:
-                new_aggr_message['nyms'].append(wallet_msg['nym'])
-            else:
-                self.aggregated_messages.append(new_aggr_message)
-                new_aggr_message['text'] = wallet_msg['text']
-                new_aggr_message['id'] = len(self.aggregated_messages) + 1
-                new_aggr_message['nyms'] = [wallet_msg['nym']]
-
-        self.aggregated_messages.append(new_aggr_message)
-
-        # broadcast all messages to each server
-        for server_ip, server_port in self.known_servers:
-            for message in self.aggregated_messages:
-                pm = message
-                pm["msg_type"] = "MESSAGE_BROADCAST"
-                util.sendDict(pm, server_ip, server_port, self.receivesocket)
+    # def handleMessageBroadcast(self):
+    #
+    #     # aggregate all messages with same text, this is a very stupid way to
+    #     # do this currently
+    #     if len(self.wallet_specific_messages) == 0:
+    #         return
+    #
+    #     sorted_messages = sorted(self.wallet_specific_messages, key=lambda k: k['text'])
+    #     new_aggr_message = {}
+    #     new_aggr_message['text'] = sorted_messages[0]['text']
+    #     new_aggr_message['id'] = len(self.aggregated_messages) + 1
+    #     new_aggr_message['nyms'] = [sorted_messages[0]['nym']] # do we need to store signatures? unclear
+    #
+    #     for wallet_msg in sorted_messages:
+    #         if wallet_msg['text'] == new_aggr_message['text']:
+    #             new_aggr_message['nyms'].append(wallet_msg['nym'])
+    #         else:
+    #             self.aggregated_messages.append(new_aggr_message)
+    #             new_aggr_message['text'] = wallet_msg['text']
+    #             new_aggr_message['id'] = len(self.aggregated_messages) + 1
+    #             new_aggr_message['nyms'] = [wallet_msg['nym']]
+    #
+    #     self.aggregated_messages.append(new_aggr_message)
+    #
+    #     # broadcast all messages to each server
+    #     for server_ip, server_port in self.known_servers:
+    #         for message in self.aggregated_messages:
+    #             pm = message
+    #             pm["msg_type"] = "MESSAGE_BROADCAST"
+    #             util.sendDict(pm, server_ip, server_port, self.receivesocket)
 
     def handleVote(self, vote_dict):
 
         vote_text = vote_dict["text"]
         sig = vote_dict["signature"]
-        sender_nym = vote_dict["nym"]
+        # sender_nym = vote_dict["nym"]
 
         # check if duplicate vote using linkable ring signature
 
@@ -175,7 +183,8 @@ class Coordinator():
         wallet_pub_key = wallet_dict["public_key"]
 
         # do error checking to see if sender was allowed to send this wallet
-        self.original_reputation_map.append(wallet_pub_key)
+        self.original_reputation_map[wallet_pub_key] = 1
+        print("Registered new wallet", wallet_pub_key)
 
 
     def handleServerJoin(self, server_ip, server_port):
@@ -189,9 +198,9 @@ class Coordinator():
                 util.sendDict(pm, server_ip, server_port, self.receivesocket)
                 return
 
-        if len(self.known_servers) > 0:
-            pm["prev_hop_ip"], pm["prev_hop_port"] = self.known_servers[-1]
-            self.known_servers.append((server_ip, server_port))
+        self.known_servers.append((server_ip, server_port))
+        if len(self.known_servers) > 1:
+            pm["prev_hop_ip"], pm["prev_hop_port"] = self.known_servers[-2]
 
             next_hop_msg["msg_type"] = "SERVER_NEXT_HOP_UPDATE"
             pm["next_hop_ip"], pm["next_hop_port"] = self.known_servers[-1]
@@ -199,14 +208,15 @@ class Coordinator():
 
             util.sendDict(next_hop_msg, prev_ip, prev_port, self.receivesocket)
 
+
         util.sendDict(pm, server_ip, server_port, self.receivesocket)
         print("New server joined: " ,server_ip, server_port)
 
     # handle the results of shuffle phase from last server
     def handleAnnouncement(self, announce_dict):
 
-        self.nym_map = announce_dict["shuffled_nyms"]
-        gen_powered = announce_dict["gen_powered"]
+        self.nym_map = announce_dict["wallet_list"]
+        gen_powered = announce_dict["g"]
         pm = {}
         pm["nym_map"] = self.nym_map
         pm["msg_type"] = "NYM_ANNOUNCE"
@@ -243,3 +253,12 @@ class Coordinator():
                 pass
             elif new_data['msg_type'] == "NEW_VOTE":
                 self.handleVote(new_data)
+            elif new_data['msg_type'] == "NEW_WALLET":
+                if self.current_phase != SERVER_CONFIG:
+                    continue
+                self.registerNewWallet(new_data)
+            elif new_data['msg_type'] == "SHUFFLE_END":
+                if self.current_phase != READY_FOR_NEW_ROUND:
+                    continue
+                self.startNextRound()
+                self.handleAnnouncement(new_data)
