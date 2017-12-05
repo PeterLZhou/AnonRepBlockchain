@@ -32,7 +32,7 @@ class Ledger:
         new_block = {
             "link_ring_sig": link_ring_sig,
             "msg_id": msg_id,
-            "points": vote
+            "points": vote,
             "prev_block": self.TAIL_BLOCK
         }
         self.updatevotes(msg_id, vote)
