@@ -9,9 +9,9 @@ class Client():
     def __init__(self, client_id):
         # I imagined wallets to be a list of dictionaries and each dictionary would have the following:
         # {
-        #    "PrivateKey": the key that will be used to sign new messages
-        #    "PublicKey": the public key of the wallet
-        #    "Reputation": the amount of reputation that the wallet has
+        #    "private_key": the key that will be used to sign new messages
+        #    "public_key": the public key of the wallet
+        #    "Reputation": the amount of reputation that the wallet has << all wallets have only one reputation, so this is unncessary
         # maybe we want to add another item in here for the wallet's identity
         # }
         self.wallets = []
@@ -46,13 +46,13 @@ class Client():
         new_wallets = []
 
         # do some kind of signing with the privatekey of the oldwallet
-        signed_oldwallet = oldwallet["PrivateKey"] # we obviously do NOT want to send the private key
+        signed_oldwallet = oldwallet["private_key"] # we obviously do NOT want to send the private key
         while oldwallet['Reputation'] > self.threshold:
             newwallet = self.createwallet()
             # TODO: Split currency among the new wallets
 
             # transfer threshold reputation points from oldwallet to newwallet
-            self.my_ledger.send_reputation(signed_oldwallet, newwallet["PublicKey"], self.threshold)
+            self.my_ledger.send_reputation(signed_oldwallet, newwallet["public_key"], self.threshold)
             # make sure that the server is publishing/broadcasting the new updated ledger with this change
             newwallet["Reputation"] += self.threshold
             new_wallets.append(newwallet)
@@ -71,9 +71,8 @@ class Client():
         reputation = 1 # going to leave reputation empty, so that transfer of reputation points can be handled elsewhere
 
         wallet = {
-            "PrivateKey": private_key,
-            "PublicKey": public_key,
-            "Reputation": reputation
+            "private_key": private_key,
+            "public_key": public_key,
         }
         return wallet
 
@@ -86,7 +85,7 @@ class Client():
         for wallet in self.wallets:
             message_dict = {
                 "text": message_text,
-                "signature": wallet["PublicKey"]
+                "signature": wallet["public_key"]
                 # TODO: not sure we need to add a nym here? isn't the signature sufficient?
                 #"nym" =
             }

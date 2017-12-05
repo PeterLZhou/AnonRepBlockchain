@@ -81,12 +81,12 @@ class Server():
 
         # Calculate amount of reputation 
         if len(self.MY_CLIENTS[client_id].wallets) < reputation:
-            print("Not enough reputation points")
+            print("Not enough reputation points! Message cannot be posted!")
             return
 
         wallet_signatures = []
         for i in range(reputation):
-            wallet_signatures.append(self.MY_CLIENTS[client_id].wallets[i]['PublicKey'])
+            wallet_signatures.append(self.MY_CLIENTS[client_id].wallets[i]['public_key'])
 
         new_message = {
             'msg_type': message,
