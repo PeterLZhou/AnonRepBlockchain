@@ -42,6 +42,8 @@ class Server():
         ### we can have the ledgers be in just the clients or just the servers or both
         self.MY_LEDGER = Ledger()
 
+        self.current_round = "NONE"
+
     def listen(self):
         while True:
             data, addr = self.receivesocket.recvfrom(100000) # buffer size is 1024 bytes
@@ -58,6 +60,7 @@ class Server():
                 nym_map = data['nym_map']
                 gen_powered = data['gen_powered']
                 self.shownyms(nym_map)
+                self.current_round = 'POST_MESSAGE'
             elif data['msg_type'] == 'SERVER_JOIN_REPLY':
                 print("Server join status: ", data["status"])
             elif data['msg_type'] == 'LEDGER_UPDATE': # a new block has been appended to the blockchain
@@ -79,6 +82,9 @@ class Server():
                 self.showmessage(text, msg_id, nyms)
             elif data['msg_type'] == 'SERVER_JOIN_REPLY':
                 print("Server join status: ", data["status"])
+            elif data['msg_type'] == 'VOTE_START':
+                self.current_round = 'VOTE_START'
+                print("Voting round started.")
 
     def send(self, data, ip_addr, port):
         util.sendDict(data, ip_addr, port, self.receivesocket)
@@ -95,6 +101,8 @@ class Server():
     def postmessage(self, client_id, reputation, message):
         if client_id not in self.MY_CLIENTS:
             print("Unknown client")
+            return
+        if self.current_round != "POST_MESSAGE":
             return
         # self.MY_MESSAGES[client_id] = message
 
@@ -155,6 +163,8 @@ class Server():
             print("{0}: Reputation 1".format(nym))
 
     def vote(self, client_id, message_id, vote):
+        if self.current_round != "VOTE_START":
+            return
         # get message
         message = message_id
         lrs = util.LRSsign() # (signing_key, public_key_idx, message, public_key_list)
