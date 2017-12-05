@@ -200,6 +200,7 @@ class Coordinator():
             util.sendDict(next_hop_msg, prev_ip, prev_port)
 
         util.sendDict(pm, server_ip, server_port)
+        print("New server ({1}, {2}) joined." % (server_ip, server_port))
 
     # handle the results of shuffle phase from last server
     def handleAnnouncement(self, announce_dict):
