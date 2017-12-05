@@ -29,8 +29,9 @@ while True:
     # postmessage <client_id (or one time pseudonym?)> <message (arbitrarily long with spaces)>
     elif args[0] == 'postmessage' or args[0] == 'pm':
         client_id = args[1]
-        message = ' '.join(args[2:])
-        my_server.postmessage(client_id, message)
+        reputation = int(args[2])
+        message = ' '.join(args[3:])
+        my_server.postmessage(client_id, reputation, message)
     elif args[0] == 'dumpmessages':
         my_server.dumpmessages()
     ### VOTING COMMANDS ###

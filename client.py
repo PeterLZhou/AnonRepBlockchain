@@ -71,21 +71,22 @@ class Client():
         reputation = 1 # going to leave reputation empty, so that transfer of reputation points can be handled elsewhere
 
         wallet = {
-            "private_key": private_key,
-            "public_key": public_key,
-            "reputation": reputation
+            "PrivateKey": private_key,
+            "PublicKey": public_key,
+            "Reputation": reputation
         }
         return wallet
 
     def generate_signed_messages(self, message_text):
         # TODO: get last_highest_rep from coordinator and choose amount of reputation to use
+        # may not be necessary anymore
         signed_messages = []
 
         # currently use all reputation
         for wallet in self.wallets:
             message_dict = {
                 "text": message_text,
-                "signature": wallet["private_key"]
+                "signature": wallet["PublicKey"]
                 # TODO: not sure we need to add a nym here? isn't the signature sufficient?
                 #"nym" =
             }
