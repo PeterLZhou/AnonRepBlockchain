@@ -75,7 +75,7 @@ class Coordinator():
             return
 
         pm = {}
-        pm["msg_type"] = "SHUFFLE_START"
+        pm["msg_type"] = "SHUFFLE"
         pm["wallet_list"] = self.original_reputation_map
         pm["g"] = self.gen
         pm["p"] = self.p
@@ -204,9 +204,11 @@ class Coordinator():
     def handleAnnouncement(self, announce_dict):
 
         self.nym_map = announce_dict["shuffled_nyms"]
+        gen_powered = announce_dict["gen_powered"]
         pm = {}
         pm["nym_map"] = self.nym_map
         pm["msg_type"] = "NYM_ANNOUNCE"
+        pm["gen_powered"] = gen_powered
         pm["g"] = self.gen
         pm["p"] = self.p
 
