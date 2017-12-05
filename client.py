@@ -69,6 +69,9 @@ class Client():
             "private_key": private_key,
             "public_key": public_key,
         }
+        print("WALLET")
+        print("Private key: ", private_key)
+        print("Public key: ", public_key)
         return wallet
 
     def generate_signed_messages(self, message_text):
