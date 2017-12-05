@@ -51,12 +51,16 @@ def sha256hash(key):
 
 def elgamalsign(message, private_key, gen_powered, P):
     k = 10**9 + 7
-    r = modexp(gen_powered, k, P-1)
-    s = modexp((modexp(sha256hash(message) - private_key * r), 1, P-1) * modinv(k, P-1), 1, P-1)
+    r = modexp(gen_powered, k, P)
+    s = modexp((modexp(sha256hash(message.encode()) - modexp(private_key * r, 1, P-1), 1, P-1) * modinv(k, P-1)), 1, P-1)
     return (r, s)
 
 def elgamalverify(message, pseudonym, r, s, gen_powered, P):
-    return modexp(gen_powered, sha256(message), P) == modexp(modexp(psuedonym, r, P) * modexp(r, s, P), 1, P)
+    a = modexp(gen_powered, modexp(sha256hash(message.encode()), 1, P-1), P)
+    b = modexp(modexp(pseudonym, r, P) * modexp(r, s, P), 1, P)
+    print(a)
+    print(b)
+    return a == b
 
 def egcd(a, b):
     if a == 0:
@@ -79,7 +83,7 @@ def aggregateBlockchain(blockchain, msg_id):
 
 if __name__ == "__main__":
     ### TEST FOR LRS SIGN ###
-    number_participants = 10
+    '''number_participants = 10
 
     x = [ randrange(SECP256k1.order) for i in range(number_participants)]
     y = list(map(lambda xi: SECP256k1.generator * xi, x))
@@ -109,6 +113,12 @@ if __name__ == "__main__":
     cipher = elgamal.encrypt(pair['publicKey'], "This is the message I want to encrypt")
     print(cipher)
     plaintext = elgamal.decrypt(pair['privateKey'], cipher)
-    print(plaintext)
+    print(plaintext)'''
 
-    message = "Hi"
+    private_key = 11650659856415392776386174044392754384983385248606732690496830263290109269972
+    public_key = 19076632923733859338410256834592107200391888429744169422565556427037783767876
+    message = "Hello world!"
+
+    signature = elgamalsign(message, private_key, G, P)
+    print(signature)
+    print(elgamalverify(message, modexp(G, private_key, P), signature[0], signature[1], G, P))
