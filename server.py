@@ -40,6 +40,8 @@ class Server():
         ### we can have the ledgers be in just the clients or just the servers or both
         self.MY_LEDGER = Ledger()
 
+        self.serverjoin()
+
     def listen(self):
         while True:
             data, addr = self.receivesocket.recvfrom(100000) # buffer size is 1024 bytes
@@ -79,7 +81,7 @@ class Server():
         # signed = self.MY_CLIENTS[client_id].generate_signed_messages(message)
         # print(signed)
 
-        # Calculate amount of reputation 
+        # Calculate amount of reputation
         if len(self.MY_CLIENTS[client_id].wallets) < reputation:
             print("Not enough reputation points! Message cannot be posted!")
             return
@@ -90,7 +92,7 @@ class Server():
 
         new_message = {
             'msg_type': message,
-            'signatures': wallet_signatures,    
+            'signatures': wallet_signatures,
         }
         # Post to coordinator
         self.sendtocoordinator(new_message)
@@ -137,3 +139,8 @@ class Server():
     def downvote(self, client_id, message_id):
         # TODO: Linkable ring signature + downvote
         print("nope")
+
+    def serverjoin(self):
+        mydict = dict()
+        mydict['msg_type'] = 'SERVER_JOIN'
+        self.sendtocoordinator(mydict)

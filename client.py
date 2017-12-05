@@ -61,14 +61,10 @@ class Client():
 
     # Adds the wallet to the dictionary. Returns the key for the wallet in the dict
     def createwallet(self):
-        # TODO @Eugine: Add in crypto code for initializing wallets - the way I
-        # imagined it was a mapping of either publickey/privatekey/address to currency amt
-        # maybe we can have currency be determined elsewhere
-
-        # 1. make private and public key and maybe some ID
-        private_key = util.generatePrivateKey()
-        public_key = util.generatePublicKey(private_key)
-        reputation = 1 # going to leave reputation empty, so that transfer of reputation points can be handled elsewhere
+        keys = util.generateWalletKeys()
+        private_key = keys['privateKey'].x
+        public_key = keys['publicKey'].h
+        reputation = 1
 
         wallet = {
             "private_key": private_key,

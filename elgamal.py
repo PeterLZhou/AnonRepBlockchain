@@ -288,20 +288,24 @@ def decode(aiPlaintext, iNumBits):
 
 #generates public key K1 (p, g, h) and private key K2 (p, g, x)
 def generate_keys(iNumBits=256, iConfidence=32):
-		#p is the prime
-		#g is the primitve root
-		#x is random in (0, p-1) inclusive
-		#h = g ^ x mod p
-		p = find_prime(iNumBits, iConfidence)
-		g = find_primitive_root(p)
-		g = modexp( g, 2, p )
-		x = random.randint( 1, (p - 1) // 2 )
-		h = modexp( g, x, p )
+    #p is the prime
+    #g is the primitve root
+    #x is random in (0, p-1) inclusive
+    #h = g ^ x mod p
+    '''p = find_prime(iNumBits, iConfidence)
+    print(p)
+    g = find_primitive_root(p)
+    g = modexp( g, 2, p )
+    print(g)'''
+    p = 78259045243861432232475255071584746141480579030179831349765025070491917900839
+    g = 850814731652311369604857817867299164248640829807806264080080192664697908283
+    x = random.randint( 1, (p - 1) // 2 )
+    h = modexp( g, x, p )
 
-		publicKey = PublicKey(p, g, h, iNumBits)
-		privateKey = PrivateKey(p, g, x, iNumBits)
+    publicKey = PublicKey(p, g, h, iNumBits)
+    privateKey = PrivateKey(p, g, x, iNumBits)
 
-		return {'privateKey': privateKey, 'publicKey': publicKey}
+    return {'privateKey': privateKey, 'publicKey': publicKey}
 
 
 #encrypts a string sPlaintext using the public key k

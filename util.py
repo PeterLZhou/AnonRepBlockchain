@@ -37,6 +37,13 @@ def generatePrivateKey():
 def generatePublicKey(private_key):
     return SECP256k1.generator * private_key
 
+def modexp( base, exp, modulus ):
+	return pow(base, exp, modulus)
+
+#Returns a dict {publicKey: ..., privateKey: ...,}
+def generateWalletKeys():
+    return elgamal.generate_keys()
+
 if __name__ == "__main__":
     ### TEST FOR LRS SIGN ###
     number_participants = 10
@@ -60,6 +67,11 @@ if __name__ == "__main__":
     print(pair['privateKey'].p)
     print(pair['privateKey'].g)
     print(pair['privateKey'].x)
+    pair2 = elgamal.generate_keys()
+    print(pair2)
+    print(pair2['privateKey'].p)
+    print(pair2['privateKey'].g)
+    print(pair2['privateKey'].x)
 
     cipher = elgamal.encrypt(pair['publicKey'], "This is the message I want to encrypt")
     print(cipher)

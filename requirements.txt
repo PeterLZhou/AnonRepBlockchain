@@ -1,3 +1,4 @@
 cryptography==2.0.3
 ecdsa==0.13
 pycrypto==2.6.1
+pysha3==1.0.2
