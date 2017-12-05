@@ -69,15 +69,31 @@ class Server():
     def sendtocoordinator(self, data):
         util.sendDict(data, self.MY_IP, COORDINATOR_PORT, self.sendsocket)
 
-    def postmessage(self, client_id, message):
+    def postmessage(self, client_id, reputation, message):
         if client_id not in self.MY_CLIENTS:
             print("Unknown client")
             return
-        self.MY_MESSAGES[client_id] = message
-        # Calculate amount of reputation to use and sign
-        signed = self.MY_CLIENTS[client_id].generate_signed_messages(message)
-        print(signed)
-        # TODO: Post to single server or broadcast to all?
+        # self.MY_MESSAGES[client_id] = message
+
+        # signing??? should be implemented in client.py to use and sign
+        # signed = self.MY_CLIENTS[client_id].generate_signed_messages(message)
+        # print(signed)
+
+        # Calculate amount of reputation 
+        if len(self.MY_CLIENTS[client_id].wallets) < reputation:
+            print("Not enough reputation points! Message cannot be posted!")
+            return
+
+        wallet_signatures = []
+        for i in range(reputation):
+            wallet_signatures.append(self.MY_CLIENTS[client_id].wallets[i]['public_key'])
+
+        new_message = {
+            'msg_type': message,
+            'signatures': wallet_signatures,    
+        }
+        # Post to coordinator
+        self.sendtocoordinator(new_message)
 
     def broadcastmessages(self):
         for client_id, message in self.MY_MESSAGES:

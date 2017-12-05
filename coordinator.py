@@ -216,18 +216,20 @@ class Coordinator():
             util.sendDict(pm, ip, port)
 
 
-    def listenAndCoordinate(self, phase_duration=5.0, timeout=0.1):
+    def listenAndCoordinate(self):
 
-        while True:
-            time_now = time.clock()
-            if(time_now - self.current_phase_start > phase_duration):
-                self.startNextRound()
+        # while True:
+        #     time_now = time.clock()
+        #     if(time_now - self.current_phase_start > phase_duration):
+        #         self.startNextRound()
 
         # read datagram if any
         # @Peter: I need a readData method that reads a dictionary, returning
         # None if no data is received within `timeout` seconds. Serialize the
         # data using json to send and received dicts
-        new_data, sender_ip, sender_port = util.readDict(timeout=0.1)
+        data, addr = self.receivesocket.recvfrom(1000000)
+        new_data = util.readDict(data)
+        sender_ip, sender_port = addr
         if not new_data:
             continue
 

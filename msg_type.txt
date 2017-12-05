@@ -1,0 +1,13 @@
+SERVER_JOIN - server sends this when requesting to join network
+SERVER_JOIN_REPLY - coordinator sends this to server who attempted to join, can ignore if you want
+SERVER_NEXT_HOP_UPDATE - coordinator sends this to a server to update its next hop
+NEW_WALLET - server sends this to coordinator when new wallet registered, with public key of the wallet
+SHUFFLE - coord sends this to first server to trigger shuffle phases
+SHUFFLE_END - last server sends this to coord when shuffle ends, together with the final nyms and the gen raised to the
+              ephemeral keys
+NYM_ANNOUNCE - coord sends the pseudonym list to all servers with this msg, has keys
+                nym_map and gen_powered
+NEW_MESSAGE
+VOTE_RESULT - coord sends this to all servers, basically the aggregated votes for
+              each message in current round
+MESSAGE_BROADCAST - coord broadcasts all the collected messages to the 
