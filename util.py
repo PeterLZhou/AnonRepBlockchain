@@ -16,7 +16,7 @@ def sendDict(data, ip_addr, port, sendsocket):
 
 #Returns clean dictionary
 def readDict(data):
-    return data.decode()
+    return util.deserialize(data)
 
 def serialize(obj):
 	return pickle.dumps(obj)

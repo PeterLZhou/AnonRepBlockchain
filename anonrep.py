@@ -22,7 +22,10 @@ while True:
     # Sends a message to every other server
     args = command.split()
     if args[0] == 'sendall':
-        my_server.sendall()
+        data = dict()
+        data['msg_type'] = 'TEST'
+        data['message'] = 'hi'
+        my_server.sendall(data)
     elif args[0] == 'broadcast':
     	my_server.broadcastmessages()
     ### MESSAGING COMMANDS ###
