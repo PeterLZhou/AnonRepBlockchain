@@ -68,6 +68,7 @@ class Server():
                 self.CURRENT_GEN_POWERED = gen_powered
                 self.shownyms(nym_map)
                 self.current_round = 'POST_MESSAGE'
+                print("\n*** Message posting phase started ***\n")
             elif data['msg_type'] == 'SERVER_JOIN_REPLY':
                 print("Server join status: ", data["status"])
             elif data['msg_type'] == 'LEDGER_UPDATE': # a new block has been appended to the blockchain
@@ -78,7 +79,6 @@ class Server():
                 self.newwalletupdateledger(data)
             elif data['msg_type'] == 'VOTE_RESULT':
                 vote_list = data['wallet_delta'] # a list of objects with structure : {text, id, nyms, votes}
-                print(vote_list)
                 new_public_keys = self.sendvotestoclients(vote_list)
                 for public_key in new_public_keys:
                     newdict = dict()
@@ -97,10 +97,10 @@ class Server():
             elif data['msg_type'] == 'VOTE_START':
                 self.current_round = 'VOTE_START'
                 self.MY_LEDGER.resetvotes()
-                print("Voting round started.")
+                print("\n*** Voting phase started ***\n")
             elif data['msg_type'] == 'VOTE_END':
                 self.current_round = 'SPLIT'
-                print("Voting round ended.")
+                print("\n*** Voting phase ended ***\n")
             elif data['msg_type'] == 'CLIENT_ANNOUNCE':
                 self.known_clients = data['client_pubkeys']
 
@@ -176,9 +176,10 @@ class Server():
         self.send(new_dict, receiver[0], receiver[1])
 
     def shownyms(self, nym_map):
-        print("Here")
+        print("\n Pseudonyms Received:")
         for nym in nym_map:
             print("{0}: Reputation 1".format(nym))
+        print("")
 
     def vote(self, client_id, message_id, vote):
         if self.current_round != "VOTE_START":
@@ -241,4 +242,4 @@ class Server():
         self.sendtocoordinator(mydict)
 
     def showmessage(self, text, msg_id, nyms):
-        print("ID: {0} Message: {1}. Signed by {2}".format(msg_id, text, nyms))
+        print("ID: {0}\nMessage: {1}\nReputation: {2}\nSigned by {3}\n".format(msg_id, text, len(nyms), nyms))
