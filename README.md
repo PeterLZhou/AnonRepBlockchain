@@ -45,6 +45,65 @@ Before starting, download all requirements with “pip install -r requirements.t
 [1] > next_round
 # The coordinator decides voting is over, and sends every server a list of pseudonyms mapped to how many reputation points they should have. The coordinator immediately begins the next round, moving straight to the SERVER_CONFIG/READY_FOR_NEW_ROUND phase. During this time, the servers pass the list to each of their clients, who examine each wallet pseudonym to find their own wallets and create a number of wallets equal to the amount of reputation they should currently have. The clients return the public keys associated with these new wallets and the server sends them to the coordinator, who rebroadcasts the new public keys list to every server. This concludes the round and starts the next message posting round - notice that now there is one additional wallet pseudonym, because the client on server 1 has one additional wallet.
 
+
+Example Run:
+
+COORDINATOR:
+
+>python3 coordinator_launch.py
+
+Connected to port  5003
+
+*** Server Config Phase ***
+
+# New server joins
+New server joined:  127.0.0.1 5000
+
+# New client joins on this server
+Registered new client (109919412191312255827829364441244210716145930774987630887297061308035523576901,27398101575023247282354285655558820038450292375928628928145581720155853449217)
+
+# Every client starts off with one wallet
+Registered new wallet 48144504382147390689047348990905902013784874470918825434868028864736745205167
+
+# Another server joins
+New server joined:  127.0.0.1 5001
+Registered new client (37928780378350448111920417685670705257653121305339731256087820737082564220271,14922184807129824658986997840373595274871621573222204418596621454415873096894)
+Registered new wallet 41172708402787218699572580635999400893366210593482922115341188810867605632433
+Registered new client (86136417583735705194854398153048832645162590138513001183721620402457401381007,51907681114700528130734434473096331082483422658371017829764918285149333604361)
+Registered new wallet 20024771758216321785377506748846435837462712155939267677727044767743707928962
+next_round
+
+*** Starting shuffle... ***
+
+
+*** Announcing nyms ***
+
+next_round
+
+*** Starting voting phase ***
+
+Received vote 1 for message 1
+Received vote 1 for message 2
+Received vote 1 for message 2
+next_round
+Registered new wallet 12800780024125477634452061536829584481600951437116797769311710514323446251569
+Registered new wallet 62076446159922720756962824110086482457252490382440909563000594587297050838525
+Registered new wallet 5740030045454289375108785319078057683413737335830590548150116483706671771281
+Registered new wallet 57367138011908978488920398513053054347459280625982833001701543235474401044587
+Registered new wallet 24366175890837059710670749587993092780118901491973781571093469955488603804400
+Registered new wallet 48150719694406226672044119219186382360892487355001478706745216026035364947522
+next_round
+
+*** Server Config Phase ***
+
+next_round
+
+*** Starting shuffle... ***
+
+*** Announcing nyms ***
+
+
+
 4.) CHALLENGES - A lot of the difficulty was understanding the entire system. The questions that we struggled with are as follows. How do we make sure the reputations after the voting phase are correctly given to the clients? In other words, how do we generate new wallets? How do we use blockchain appropriately in our system?
 
 Beyond just understanding the system, we also had to figure out what parts we could reasonably simplify. One of the simplifications we struggled with was blockchain. For one, we simplified the mining process, which was an obvious choice to save time, especially because we chose to use Python.
