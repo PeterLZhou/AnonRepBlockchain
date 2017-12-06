@@ -43,12 +43,14 @@ class Client():
         new_wallet_list = []
         new_public_keys_list = []
         prev_reputation = len(self.wallets)
-        for nym in vote_list:
+        for nym, value in vote_list:
             for wallet in self.wallets:
                 if verify_nym(wallet, nym, gen_powered):
-                    # Create however many new wallets or destroy, then append to new_wallet_list and new_public_keys_list
-                    # Add this transaction to blockchain
-                    print("TODO")
+                    for i in range(value):
+                        new_wallet = self.createwallet()
+                        new_wallet_list.append(new_wallet)
+                        new_public_keys_list.append(new_wallet.public_key)
+                        # Insert block creation here @Eugine
         self.wallets = new_wallet_list
         return new_public_keys_list
 
