@@ -16,7 +16,7 @@ class Server():
     def __init__(self):
         # Used for the server to send outbound messages
         self.receivesocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        #Used for the server to receive inbound messages
+        # Used for the server to receive inbound messages
         # self.receivesocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
         #Used for the shuffle protocol
         self.randomnumber = (int) (random.random() * 1000)
@@ -49,6 +49,8 @@ class Server():
         self.current_round = "NONE"
 
     def listen(self):
+        ''' decides what to do with a message based on the msg_type
+        '''
         while True:
             data, addr = self.receivesocket.recvfrom(100000) # buffer size is 1024 bytes
             data = util.readDict(data)
@@ -120,13 +122,7 @@ class Server():
             return
         if self.current_round != "POST_MESSAGE":
             return
-        # self.MY_MESSAGES[client_id] = message
 
-        # signing??? should be implemented in client.py to use and sign
-        # signed = self.MY_CLIENTS[client_id].generate_signed_messages(message)
-        # print(signed)
-
-        # Calculate amount of reputation
         if len(self.MY_CLIENTS[client_id].wallets) < reputation:
             print("Not enough reputation points! Message cannot be posted!")
             return
@@ -204,7 +200,7 @@ class Server():
         }
         self.sendtocoordinator(new_message)
 
-    def mergeledger(self, message):
+    def mergeledger(self, message): # generic server receiving a newly appended block
         self.MY_LEDGER.appendblock(message['new_block'])
 
     def newwalletupdateledger(self, message):
@@ -218,6 +214,10 @@ class Server():
         self.sendtocoordinator(new_message)
 
     def sendvotestoclients(self, vote_list):
+        '''calls on clients to make new wallets and return the new wallets
+        to the calling function that sends the new wallets to the coordinator 
+        the new wallets are also appended to the ledger
+        '''
         new_wallet_list = []
         for client_id in self.MY_CLIENTS:
             new_blocks, new_public_keys = self.MY_CLIENTS[client_id].recalculateWallets(vote_list, self.CURRENT_GEN_POWERED)
@@ -243,6 +243,3 @@ class Server():
 
     def showmessage(self, text, msg_id, nyms):
         print("ID: {0}\nMessage: {1}\nReputation: {2}\nSigned by {3}\n".format(msg_id, text, len(nyms), nyms))
-
-    def proofofwork(self, hash):
-        salt = 0

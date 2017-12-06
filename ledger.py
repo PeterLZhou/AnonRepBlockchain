@@ -4,13 +4,23 @@ class Ledger:
     def __init__(self):
         # each block is a dictionary as follows:
         '''
+        For a vote:
             {
                 "link_ring_sig": linkable-ring-signature of the client making the upvote
                 "msg_id": message id of the message that is being voted on
                 "vote": the vote that is being given to the message wth the msg_id
                 "salt": the salt that verifies the block has not be tampered with
                             salt is none if the block is in the awaiting list
+                "prev_block": hash of the previous block
             }
+
+        For a wallet:
+        {
+            "nym": pseudonym of the wallet that generated these wallets,
+            "nym_sig": signature that verifies the identity of the nym,
+            "new_wallet_public_keys": new_wallet_public_keys,
+            "prev_block": hash of the previous block
+        }
         '''
 
         self.BLOCKS = {}
