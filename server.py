@@ -72,6 +72,8 @@ class Server():
                 self.mergeledger(data)
             elif data['msg_type'] == 'NEW_VOTE': # this server has been selected to be the leader
                 self.newvoteupdateledger(data)
+            elif data['msg_type'] == 'NEW_WALLET': # this server has been selected to be the leader
+                self.newwalletupdateledger(data)
             elif data['msg_type'] == 'VOTE_RESULT':
                 vote_list = data['votes'] # a list of objects with structure : {text, id, nyms, votes}
                 new_public_keys = self.sendvotestoclients(vote_list)
@@ -131,10 +133,12 @@ class Server():
         for i in range(len(wallet_signatures)):
             print("Verifying message")
             assert(util.elgamalverify(message, wallet_pseudonyms[i], wallet_signatures[i][0], wallet_signatures[i][1], self.CURRENT_GEN_POWERED, P))
+            print("Message verified")
         new_message = {
             'msg_type': "MESSAGE",
             'text_msg': message,
             'signatures': wallet_signatures,
+            'pseudonyms': wallet_pseudonyms
         }
         # Post to coordinator
         self.sendtocoordinator(new_message)
@@ -213,11 +217,11 @@ class Server():
     def sendvotestoclients(self, vote_list, gen_powered):
         new_wallet_list = []
         for client in MY_CLIENTS:
-            new_blocks, new_public_keys = recalculateWallets(vote_list, gen_powered)
+            new_blocks, new_public_keys = client.recalculateWallets(vote_list, gen_powered)
             new_wallet_list.extend(new_public_keys)
             # append transactions to ledger
             for new_block in new_blocks:
-                new_block["msg_type"] = "NEW_WALLET_BLOCK"
+                new_block["msg_type"] = "WALLET_BLOCK"
                 self.sendtocoordinator(new_block)
 
         return new_wallet_list

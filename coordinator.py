@@ -32,6 +32,7 @@ class Coordinator():
         self.known_servers = []
         self.pending_servers = []
         self.original_reputation_map = {}
+        self.prev_original_reputation_map = {}
         self.known_client_pubkeys = []
         self.nym_map = {}
         self.final_generator = None
@@ -102,10 +103,12 @@ class Coordinator():
 
         new_aggr_msg = {}
         new_aggr_msg["text"] = message_dict["text_msg"]
-        new_aggr_msg["signature"] = None # change later
-        new_aggr_msg["nyms"] = message_dict["signatures"] # actually the public keys
+        new_aggr_msg["signature"] = message_dict["signatures"] # change later
+        new_aggr_msg["nyms"] = message_dict["pseudonyms"] # actually the public keys
         new_aggr_msg["id"] = len(self.aggregated_messages) + 1
 
+
+        print("Message from", new_aggr_msg["nyms"])
         # verify signature (and send reply? don't think we need this here)
 
         self.aggregated_messages.append(new_aggr_msg)
@@ -150,6 +153,13 @@ class Coordinator():
 
         return self.known_servers[0]
 
+    def handleWalletBlock(self, wallet_block_dict):
+
+        wallet_block_dict["msg_type"] = "NEW_WALLET"
+        leader_ip, leader_port = self.decideLeader()
+
+        util.sendDict(wallet_block_dict, leader_ip, leader_port, self.receivesocket)
+
     def handleVote(self, vote_dict):
 
         msg_id = vote_dict["msg_id"]
@@ -182,12 +192,12 @@ class Coordinator():
         vote_per_wallet = {}
 
         for msg in self.aggregated_messages:
-            if msg["msg_id"] in aggr_votes:
-                total_votes = aggr_votes[msg["msg_id"]]
+            if str(msg["id"]) in aggr_votes:
+                total_votes = aggr_votes[str(msg["id"])]
                 num_nyms = len(msg["nyms"])
 
                 for (idx, nym) in enumerate(msg["nyms"]):
-                    wallet_rep = total_votes / (num_nyms - idx)
+                    wallet_rep = int(total_votes / (num_nyms - idx))
                     if wallet_rep < -2:
                         wallet_rep = -2
                     total_votes = total_votes - wallet_rep
@@ -196,17 +206,20 @@ class Coordinator():
                     else:
                         vote_per_wallet[nym] = wallet_rep
 
-        print(vote_per_wallet)
         for nym in self.nym_map:
             if nym in vote_per_wallet:
-                vote_per_wallet += 1
+                vote_per_wallet[nym] += 1
             else:
-                vote_per_wallet = 1
+                vote_per_wallet[nym] = 1
 
         pm = {
-            "msg_type": "WALLET_SPLIT",
+            "msg_type": "VOTE_RESULT",
             "wallet_delta": vote_per_wallet
         }
+
+        # forget old pseudonyms
+        self.prev_original_reputation_map = self.original_reputation_map
+        self.original_reputation_map = {}
 
         for (server_ip, server_port) in self.known_servers:
             util.sendDict(pm, server_ip, server_port, self.receivesocket)
@@ -339,3 +352,11 @@ class Coordinator():
                 if self.current_phase != VOTE:
                     continue
                 self.broadcastLedger(new_data, sender_ip, sender_port)
+            elif new_data['msg_type'] == "VOTE_COUNT":
+                if self.current_phase != SPLIT:
+                    continue
+                self.aggregateVotes(new_data)
+            elif new_data['msg_type'] == "WALLET_BLOCK":
+                if self.current_phase != SPLIT:
+                    continue
+                self.handleWalletBlock(new_data)

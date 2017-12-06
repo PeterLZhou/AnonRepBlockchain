@@ -61,7 +61,7 @@ class Client():
                 new_blocks.append(new_block)
 
         self.wallets = new_wallet_list
-        return new_public_keys_list
+        return new_blocks, new_public_keys_list
 
 
 
