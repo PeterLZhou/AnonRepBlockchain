@@ -7,14 +7,14 @@ class Ledger:
             {
                 "link_ring_sig": linkable-ring-signature of the client making the upvote
                 "msg_id": message id of the message that is being voted on
-                "points": the amount of reputation points that is being sent
+                "vote": the vote that is being given to the message wth the msg_id
                 "salt": the salt that verifies the block has not be tampered with
                             salt is none if the block is in the awaiting list
             }
         '''
 
         self.BLOCKS = {}
-        self.TAIL_BLOCK = "-1" # default starting block
+        self.TAIL_BLOCK = "-1" # default starting block hash value
         self.BLOCKS[self.TAIL_BLOCK] = -1
         self.ALL_VOTES = {}
         # ALL_VOTES will be an aggregate of all the votes on the messages and will be a dict as follows:
@@ -25,11 +25,24 @@ class Ledger:
         '''
     def appendblock(self, new_block):
         # insert optional verification
-        new_block_hash = util.sha256hash(str(new_block).encode())
+        new_block_hash = util.sha256hash(str(new_block).encode('utf-8'))
         self.BLOCKS[new_block_hash] = new_block
         self.TAIL_BLOCK = new_block_hash
         if 'msg_id' in new_block and 'vote' in new_block:
             self.updatevotes(new_block['msg_id'], new_block['vote'])
+
+    def lognewwallets(self, nym, nym_sig, new_wallet_public_keys):
+        '''processing new wallets, should only be called by lead server
+        '''
+        new_block = {
+            "nym": nym,
+            "nym_sig": nym_sig,
+            "new_wallet_public_keys": new_wallet_public_keys
+        }
+        salt = self.signblock(new_block)
+        new_block['salt'] = salt
+        self.appendblock(new_block)
+        return new_block
 
     def logvote(self, link_ring_sig, msg_id, vote):
         '''processing a vote, should only be called by lead server
@@ -37,7 +50,7 @@ class Ledger:
         new_block = {
             "link_ring_sig": link_ring_sig,
             "msg_id": msg_id,
-            "points": vote,
+            "vote": vote,
             "prev_block": self.TAIL_BLOCK
         }
         salt = self.signblock(new_block)
@@ -67,6 +80,7 @@ class Ledger:
 
     def verifysignature(self, prev_hash, salt):
         '''We can make this crypto as easy or as difficult as we want
+        is valid if last digit of hash is less or equal to 3 (increase this to make faster)
         '''
         result = util.sha256hash((str(prev_hash) + salt).encode('utf-8'))
         if result % 10 <= 3:

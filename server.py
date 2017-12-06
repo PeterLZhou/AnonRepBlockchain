@@ -80,6 +80,8 @@ class Server():
                     newdict['msg_type'] = 'NEW_WALLET'
                     newdict['public_key'] = public_key
                     sendtocoordinator(newdict)
+            elif data['msg_type'] == 'GET_VOTE_COUNT':
+                self.returnvotecount(data)
             elif data['msg_type'] == 'MESSAGE_BROADCAST':
                 text = data['text']
                 msg_id = data['id']
@@ -198,11 +200,34 @@ class Server():
     def mergeledger(self, message):
         self.MY_LEDGER.appendblock(message['new_block'])
 
+    def newwalletupdateledger(self, message):
+    # this is the leader server updating the ledger for new wallets created
+        new_block = self.MY_LEDGER.lognewwallets(message['nym'], message['nym_sig'],
+                                                message['new_wallet_public_keys'])
+        new_message = {
+            'msg_type': "LEDGER_UPDATE",
+            'new_block': new_block
+        }
+        self.sendtocoordinator(new_message)
+
     def sendvotestoclients(self, vote_list, gen_powered):
         new_wallet_list = []
         for client in MY_CLIENTS:
-            new_wallet_list.extend(recalculateWallets(vote_list, gen_powered))
+            new_blocks, new_public_keys = recalculateWallets(vote_list, gen_powered)
+            new_wallet_list.extend(new_public_keys)
+            # append transactions to ledger
+            for new_block in new_blocks:
+                new_block["msg_type"] = "NEW_WALLET_BLOCK"
+                self.sendtocoordinator(new_block)
+
         return new_wallet_list
+
+    def returnvotecount(self, message):
+        new_message = {
+            'msg_type': "VOTE_COUNT",
+            'dict': self.MY_LEDGER.ALL_VOTES
+        }
+        self.sendtocoordinator(new_message)
 
     def serverjoin(self):
         mydict = dict()
