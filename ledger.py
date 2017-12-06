@@ -23,6 +23,9 @@ class Ledger:
                 "msg_id": vote_count
             }
         '''
+    def resetvotes(self):
+        self.ALL_VOTES = {}
+
     def appendblock(self, new_block):
         # insert optional verification
         new_block_hash = util.sha256hash(str(new_block).encode('utf-8'))
@@ -30,6 +33,20 @@ class Ledger:
         self.TAIL_BLOCK = new_block_hash
         if 'msg_id' in new_block and 'vote' in new_block:
             self.updatevotes(new_block['msg_id'], new_block['vote'])
+
+    def lognewwallets(self, nym, nym_sig, new_wallet_public_keys):
+        '''processing new wallets, should only be called by lead server
+        '''
+        new_block = {
+            "nym": nym,
+            "nym_sig": nym_sig,
+            "new_wallet_public_keys": new_wallet_public_keys,
+            "prev_block": self.TAIL_BLOCK
+        }
+        salt = self.signblock(new_block)
+        new_block['salt'] = salt
+        self.appendblock(new_block)
+        return new_block
 
     def logvote(self, link_ring_sig, msg_id, vote):
         '''processing a vote, should only be called by lead server
@@ -59,7 +76,7 @@ class Ledger:
                 prev_char += chr(0)
                 count = 0
             salt = prev_char + chr(count)
-            if verifysignature(self.TAIL_BLOCK, salt):
+            if self.verifysignature(self.TAIL_BLOCK, salt):
                 break
             count += 1
 
@@ -69,8 +86,8 @@ class Ledger:
         '''We can make this crypto as easy or as difficult as we want
         is valid if last digit of hash is less or equal to 3 (increase this to make faster)
         '''
-        result = util.sha256hash((prev_hash + salt).encode('utf-8'))
-        if result % 10 <= 3 : 
+        result = util.sha256hash((str(prev_hash) + salt).encode('utf-8'))
+        if result % 10 <= 3:
             return True
         else:
             return False

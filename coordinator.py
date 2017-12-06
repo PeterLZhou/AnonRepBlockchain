@@ -32,6 +32,7 @@ class Coordinator():
         self.known_servers = []
         self.pending_servers = []
         self.original_reputation_map = {}
+        self.prev_original_reputation_map = {}
         self.known_client_pubkeys = []
         self.nym_map = {}
         self.final_generator = None
@@ -55,11 +56,20 @@ class Coordinator():
     def startNextRound(self):
 
         # finish tasks before current phase ends
-        if self.current_phase == VOTE:
-            # split phase begins here
-            pass
 
         self.current_phase = self.NEXT_PHASE[(self.current_phase + 1) % len(self.NEXT_PHASE)]
+
+        if self.current_phase == SPLIT:
+            # split phase begins here
+            pm = {}
+            pm['msg_type'] = "VOTE_END"
+            for server_ip, server_port in self.known_servers:
+                util.sendDict(pm, server_ip, server_port, self.receivesocket)
+
+            leader_ip, leader_port = self.decideLeader()
+            pm['msg_type'] = "GET_VOTE_COUNT"
+            util.sendDict(pm, leader_ip, leader_port, self.receivesocket)
+
         # more phase handling code
         # most importantly, need to signal each server that new phase has begun
         # finish tasks before new phase starts
@@ -93,10 +103,12 @@ class Coordinator():
 
         new_aggr_msg = {}
         new_aggr_msg["text"] = message_dict["text_msg"]
-        new_aggr_msg["signature"] = None # change later
-        new_aggr_msg["nyms"] = message_dict["signatures"] # actually the public keys
+        new_aggr_msg["signature"] = message_dict["signatures"] # change later
+        new_aggr_msg["nyms"] = message_dict["pseudonyms"] # actually the public keys
         new_aggr_msg["id"] = len(self.aggregated_messages) + 1
 
+
+        print("Message from", new_aggr_msg["nyms"])
         # verify signature (and send reply? don't think we need this here)
 
         self.aggregated_messages.append(new_aggr_msg)
@@ -141,17 +153,24 @@ class Coordinator():
 
         return self.known_servers[0]
 
+    def handleWalletBlock(self, wallet_block_dict):
+
+        wallet_block_dict["msg_type"] = "NEW_WALLET"
+        leader_ip, leader_port = self.decideLeader()
+
+        util.sendDict(wallet_block_dict, leader_ip, leader_port, self.receivesocket)
+
     def handleVote(self, vote_dict):
 
         msg_id = vote_dict["msg_id"]
-        vote = vote_dict["vote"]
+        vote = int(vote_dict["vote"])
         lrs = vote_dict["signature"]
 
         print("Received vote", vote, "for message", msg_id)
 
-        if(len(aggregated_messages) < msg_id or (vote != -1 and vote != 1)):
+        if(len(self.aggregated_messages) < int(msg_id) or (vote != -1 and vote != 1)):
             # invalid vote, send reply saying this
-            print("Invalid vote {0} for {1} received from {2}".format(vote, msg_id, sender_nym))
+            print("Invalid vote {0} for {1} received".format(vote, msg_id))
             return
         else:
             vote_dict["msg_type"] = "NEW_VOTE"
@@ -169,34 +188,40 @@ class Coordinator():
     # to all servers
     def aggregateVotes(self, vote_dict):
 
-        aggr_votes = vote_dict["aggr_votes"]
+        aggr_votes = vote_dict["dict"]
+        print("Aggregates:", aggr_votes)
         vote_per_wallet = {}
 
         for msg in self.aggregated_messages:
-            if msg["msg_id"] in aggr_votes:
-                total_votes = aggr_votes[msg["msg_id"]]
+            if str(msg["id"]) in aggr_votes:
+                total_votes = int(aggr_votes[str(msg["id"])])
                 num_nyms = len(msg["nyms"])
 
                 for (idx, nym) in enumerate(msg["nyms"]):
-                    wallet_rep = total_votes / (num_nyms - idx)
-                    if wallet_rep < -2:
-                        wallet_rep = -2
+                    wallet_rep = int(total_votes / (num_nyms - idx))
+                    if wallet_rep < -1:
+                        wallet_rep = -1
                     total_votes = total_votes - wallet_rep
                     if nym in vote_per_wallet:
-                        vote_per_wallet[nym] = max(-2, vote_per_wallet[nym] + wallet_rep)
+                        vote_per_wallet[nym] = max(-1, vote_per_wallet[nym] + wallet_rep)
                     else:
                         vote_per_wallet[nym] = wallet_rep
 
         for nym in self.nym_map:
             if nym in vote_per_wallet:
-                vote_per_wallet += 1
+                vote_per_wallet[nym] += 1
             else:
-                vote_per_wallet = 1
+                vote_per_wallet[nym] = 1
 
         pm = {
-            "msg_type": "WALLET_SPLIT",
+            "msg_type": "VOTE_RESULT",
             "wallet_delta": vote_per_wallet
         }
+
+        # forget old pseudonyms
+        self.prev_original_reputation_map = self.original_reputation_map
+        self.original_reputation_map = {}
+        self.aggregated_messages = []
 
         for (server_ip, server_port) in self.known_servers:
             util.sendDict(pm, server_ip, server_port, self.receivesocket)
@@ -314,10 +339,10 @@ class Coordinator():
                 self.handleClientJoin(new_data)
             elif new_data['msg_type'] == "MESSAGE":
                 self.handleMessage(new_data)
-            elif new_data['msg_type'] == "NEW_VOTE":
+            elif new_data['msg_type'] == "VOTE":
                 self.handleVote(new_data)
             elif new_data['msg_type'] == "NEW_WALLET":
-                if self.current_phase != SERVER_CONFIG:
+                if self.current_phase != SERVER_CONFIG and self.current_phase != SPLIT:
                     continue
                 self.registerNewWallet(new_data)
             elif new_data['msg_type'] == "SHUFFLE_END":
@@ -329,3 +354,11 @@ class Coordinator():
                 if self.current_phase != VOTE:
                     continue
                 self.broadcastLedger(new_data, sender_ip, sender_port)
+            elif new_data['msg_type'] == "VOTE_COUNT":
+                if self.current_phase != SPLIT:
+                    continue
+                self.aggregateVotes(new_data)
+            elif new_data['msg_type'] == "WALLET_BLOCK":
+                if self.current_phase != SPLIT:
+                    continue
+                self.handleWalletBlock(new_data)

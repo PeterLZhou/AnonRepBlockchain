@@ -37,27 +37,33 @@ class Client():
         print("Client public key: ", self.public_key)
         print("Client private key: ", self.private_key)
 
-    # Called by the server, returns a list of new wallets
+    # Called by the server, returns a list of new wallets and their respective blocks
     # the private keys will be kept by the client, but the public keys will be shared with the server
     def recalculateWallets(self, vote_list, gen_powered):
         new_wallet_list = []
         new_public_keys_list = []
+        new_blocks = []
         prev_reputation = len(self.wallets)
-        for nym, value in vote_list:
+        for nym, value in vote_list.items():
             for wallet in self.wallets:
-                if verify_nym(wallet, nym, gen_powered):
+                nym_new_wallets = []
+                if self.verify_nym(wallet, nym, gen_powered):
                     for i in range(value):
                         new_wallet = self.createwallet()
                         new_wallet_list.append(new_wallet)
-                        new_public_keys_list.append(new_wallet.public_key)
-                        # Insert block creation here @Eugine
+                        new_public_keys_list.append(new_wallet["public_key"])
+                        nym_new_wallets.append(new_wallet["public_key"])
+                new_block = {
+                    'nym': nym,
+                    'nym_sig': util.elgamalsign("walletsplit", wallet['private_key'], gen_powered, P),
+                    'new_wallet_public_keys': nym_new_wallets
+                }
+                new_blocks.append(new_block)
+
         self.wallets = new_wallet_list
-        return new_public_keys_list
+        return new_blocks, new_public_keys_list
 
-
-
-
-    def verify_nym(wallet, nym, gen_powered):
+    def verify_nym(self, wallet, nym, gen_powered):
         return util.modexp(gen_powered, wallet['private_key'], P) == nym
 
     # Adds the wallet to the dictionary. Returns the key for the wallet in the dict
@@ -102,16 +108,14 @@ class Client():
 
     def vote(self, msg_id, vote, known_clients):
         message = msg_id
-        public_key_idx = known_clients.index(self.public_key)
+        public_key_idx = util.tup_index(known_clients, self.public_key)
         signing_key = self.private_key
-
-        print(known_clients)
 
         lrs = util.LRSsign(signing_key, public_key_idx, message, known_clients) # (signing_key, public_key_idx, message, public_key_list)
         new_message = {
             'msg_type': "VOTE",
             'signature': lrs,
             'msg_id': msg_id,
-            'vote': vote,
+            'vote': int(vote),
         }
         return new_message

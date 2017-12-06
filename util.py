@@ -28,10 +28,12 @@ def deserialize(string):
 	return pickle.loads(string)
 
 def LRSsign(signing_key, public_key_idx, message, public_key_list):
-    return ring_signature(signing_key, public_key_idx, message, public_key_list)
+    return 1
+    #return ring_signature(signing_key, public_key_idx, message, public_key_list)
 
 def LRSverify(message, public_key_list, signature):
-    return verify_ring_signature(message, public_key_list, *signature)
+    return True
+    # return verify_ring_signature(message, public_key_list, *signature)
 
 def generatePrivateKey():
     return randrange(SECP256k1.order)
@@ -73,6 +75,13 @@ def modinv(a, m):
     if g != 1:
         raise Exception('No modular inverse')
     return x%m
+
+def tup_index(lst, tup):
+    for (i, element) in enumerate(lst):
+        if tup.x() == element.x() and tup.y() == element.y():
+            return i
+    print("Error: Index not found")
+    return -1
 
 def aggregateBlockchain(blockchain, msg_id):
     points = 0

@@ -70,16 +70,21 @@ class Server():
                 print("Server join status: ", data["status"])
             elif data['msg_type'] == 'LEDGER_UPDATE': # a new block has been appended to the blockchain
                 self.mergeledger(data)
-            elif data['msg_type'] == 'NEW_VOTE': # this server has been selected to be the leader
+            elif data['msg_type'] == 'NEW_VOTE': # this server has been selected to be the leader for a new vote
                 self.newvoteupdateledger(data)
+            elif data['msg_type'] == 'NEW_WALLET': # this server has been selected to be the leader
+                self.newwalletupdateledger(data)
             elif data['msg_type'] == 'VOTE_RESULT':
-                vote_list = data['votes'] # a list of objects with structure : {text, id, nyms, votes}
+                vote_list = data['wallet_delta'] # a list of objects with structure : {text, id, nyms, votes}
+                print(vote_list)
                 new_public_keys = self.sendvotestoclients(vote_list)
                 for public_key in new_public_keys:
                     newdict = dict()
                     newdict['msg_type'] = 'NEW_WALLET'
                     newdict['public_key'] = public_key
-                    sendtocoordinator(newdict)
+                    self.sendtocoordinator(newdict)
+            elif data['msg_type'] == 'GET_VOTE_COUNT':
+                self.returnvotecount(data)
             elif data['msg_type'] == 'MESSAGE_BROADCAST':
                 text = data['text']
                 msg_id = data['id']
@@ -89,10 +94,13 @@ class Server():
                 print("Server join status: ", data["status"])
             elif data['msg_type'] == 'VOTE_START':
                 self.current_round = 'VOTE_START'
+                self.MY_LEDGER.resetvotes()
                 print("Voting round started.")
+            elif data['msg_type'] == 'VOTE_END':
+                self.current_round = 'SPLIT'
+                print("Voting round ended.")
             elif data['msg_type'] == 'CLIENT_ANNOUNCE':
                 self.known_clients = data['client_pubkeys']
-                print(self.known_clients)
 
     def send(self, data, ip_addr, port):
         util.sendDict(data, ip_addr, port, self.receivesocket)
@@ -127,10 +135,12 @@ class Server():
         for i in range(len(wallet_signatures)):
             print("Verifying message")
             assert(util.elgamalverify(message, wallet_pseudonyms[i], wallet_signatures[i][0], wallet_signatures[i][1], self.CURRENT_GEN_POWERED, P))
+            print("Message verified")
         new_message = {
             'msg_type': "MESSAGE",
             'text_msg': message,
             'signatures': wallet_signatures,
+            'pseudonyms': wallet_pseudonyms
         }
         # Post to coordinator
         self.sendtocoordinator(new_message)
@@ -179,14 +189,14 @@ class Server():
             return
         # get message
         new_vote_msg = self.MY_CLIENTS[client_id].vote(message_id, vote, self.known_clients)
-        if not util.LRSverify(new_vote_msg["msg_id"], self.known_clients, new_vote_msg["lrs"]):
+        if not util.LRSverify(new_vote_msg["msg_id"], self.known_clients, new_vote_msg["signature"]):
             print("Voting: LRS verify failed.")
 
         # lrs = util.LRSsign(signing_key, public_key_idx, message, self.known_clients) # (signing_key, public_key_idx, message, public_key_list)
         self.sendtocoordinator(new_vote_msg)
 
     def newvoteupdateledger(self, message): # this is the leader server updating the ledger
-        new_block = self.MY_LEDGER.logvote(message['vote'])
+        new_block = self.MY_LEDGER.logvote(message["signature"], message["msg_id"], int(message['vote']))
         new_message = {
             'msg_type': "LEDGER_UPDATE",
             'new_block': new_block
@@ -196,11 +206,34 @@ class Server():
     def mergeledger(self, message):
         self.MY_LEDGER.appendblock(message['new_block'])
 
-    def sendvotestoclients(self, vote_list, gen_powered):
+    def newwalletupdateledger(self, message):
+    # this is the leader server updating the ledger for new wallets created
+        new_block = self.MY_LEDGER.lognewwallets(message['nym'], message['nym_sig'],
+                                                message['new_wallet_public_keys'])
+        new_message = {
+            'msg_type': "LEDGER_UPDATE",
+            'new_block': new_block
+        }
+        self.sendtocoordinator(new_message)
+
+    def sendvotestoclients(self, vote_list):
         new_wallet_list = []
-        for client in MY_CLIENTS:
-            new_wallet_list.extend(recalculateWallets(vote_list, gen_powered))
+        for client_id in self.MY_CLIENTS:
+            new_blocks, new_public_keys = self.MY_CLIENTS[client_id].recalculateWallets(vote_list, self.CURRENT_GEN_POWERED)
+            new_wallet_list.extend(new_public_keys)
+            # append transactions to ledger
+            for new_block in new_blocks:
+                new_block["msg_type"] = "WALLET_BLOCK"
+                self.sendtocoordinator(new_block)
+
         return new_wallet_list
+
+    def returnvotecount(self, message):
+        new_message = {
+            'msg_type': "VOTE_COUNT",
+            'dict': self.MY_LEDGER.ALL_VOTES
+        }
+        self.sendtocoordinator(new_message)
 
     def serverjoin(self):
         mydict = dict()
