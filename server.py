@@ -70,7 +70,7 @@ class Server():
                 print("Server join status: ", data["status"])
             elif data['msg_type'] == 'LEDGER_UPDATE': # a new block has been appended to the blockchain
                 self.mergeledger(data)
-            elif data['msg_type'] == 'NEW_VOTE': # this server has been selected to be the leader
+            elif data['msg_type'] == 'NEW_VOTE': # this server has been selected to be the leader for a new vote
                 self.newvoteupdateledger(data)
             elif data['msg_type'] == 'NEW_WALLET': # this server has been selected to be the leader
                 self.newwalletupdateledger(data)
