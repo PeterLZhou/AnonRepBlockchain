@@ -37,7 +37,8 @@ class Ledger:
         new_block = {
             "nym": nym,
             "nym_sig": nym_sig,
-            "new_wallet_public_keys": new_wallet_public_keys
+            "new_wallet_public_keys": new_wallet_public_keys,
+            "prev_block": self.TAIL_BLOCK
         }
         salt = self.signblock(new_block)
         new_block['salt'] = salt
