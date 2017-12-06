@@ -53,11 +53,16 @@ class Coordinator():
         except:
             print("Port {} is probably in use".format(self.my_port))
 
+        print("\n*** Server Config Phase ***\n")
+
     def startNextRound(self):
 
         # finish tasks before current phase ends
 
         self.current_phase = self.NEXT_PHASE[(self.current_phase + 1) % len(self.NEXT_PHASE)]
+
+        if self.current_phase == SERVER_CONFIG:
+            print("\n*** Server Config Phase ***\n")
 
         if self.current_phase == SPLIT:
             # split phase begins here
@@ -74,6 +79,7 @@ class Coordinator():
         # most importantly, need to signal each server that new phase has begun
         # finish tasks before new phase starts
         if self.current_phase == VOTE:
+            print("\n*** Starting voting phase ***\n")
             pm = {}
             pm['msg_type'] = "VOTE_START"
             for server_ip, server_port in self.known_servers:
@@ -94,7 +100,7 @@ class Coordinator():
         pm["p"] = self.p
         pm["server_list"] = self.known_servers
 
-        print("Starting shuffle...")
+        print("\n*** Starting shuffle... ***\n")
 
         server_ip, server_port = self.known_servers[0]
         util.sendDict(pm, server_ip, server_port, self.receivesocket)
@@ -108,7 +114,7 @@ class Coordinator():
         new_aggr_msg["id"] = len(self.aggregated_messages) + 1
 
 
-        print("Message from", new_aggr_msg["nyms"])
+        #print("Message from", new_aggr_msg["nyms"])
         # verify signature (and send reply? don't think we need this here)
 
         self.aggregated_messages.append(new_aggr_msg)
@@ -189,7 +195,6 @@ class Coordinator():
     def aggregateVotes(self, vote_dict):
 
         aggr_votes = vote_dict["dict"]
-        print("Aggregates:", aggr_votes)
         vote_per_wallet = {}
 
         for msg in self.aggregated_messages:
@@ -283,8 +288,8 @@ class Coordinator():
     # handle the results of shuffle phase from last server
     def handleAnnouncement(self, announce_dict):
 
-        print("Announcing nyms")
-        print(announce_dict["wallet_list"])
+        print("\n*** Announcing nyms ***\n")
+        #print(announce_dict["wallet_list"])
 
         self.nym_map = announce_dict["wallet_list"]
         self.final_generator = announce_dict["g"]

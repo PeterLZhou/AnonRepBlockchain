@@ -27,7 +27,6 @@ def main():
         args = command.split()
 
         if args[0] == "next_round":
-            print("Here")
             coordinator.startNextRound()
 
 
