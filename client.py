@@ -81,7 +81,7 @@ class Client():
         print("Private key: ", private_key)
         print("Public key: ", public_key)
         return wallet
-
+'''
     def generate_signed_messages(self, message_text):
         # TODO: get last_highest_rep from coordinator and choose amount of reputation to use
         # may not be necessary anymore
@@ -92,11 +92,10 @@ class Client():
             message_dict = {
                 "text": message_text,
                 "signature": wallet["public_key"]
-                # TODO: not sure we need to add a nym here? isn't the signature sufficient?
-                #"nym" =
             }
             signed_messages.append(message_dict)
         return signed_messages
+'''
 
     def get_signatures(self, message, reputation, gen_powered):
         signature_list = list()
