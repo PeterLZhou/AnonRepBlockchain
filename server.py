@@ -93,6 +93,7 @@ class Server():
                 print("Server join status: ", data["status"])
             elif data['msg_type'] == 'VOTE_START':
                 self.current_round = 'VOTE_START'
+                self.MY_LEDGER.resetvotes()
                 print("Voting round started.")
             elif data['msg_type'] == 'VOTE_END':
                 self.current_round = 'SPLIT'
