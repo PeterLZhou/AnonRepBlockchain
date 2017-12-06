@@ -92,6 +92,7 @@ class Server():
                 print("Voting round started.")
             elif data['msg_type'] == 'CLIENT_ANNOUNCE':
                 self.known_clients = data['client_pubkeys']
+                print(self.known_clients)
 
     def send(self, data, ip_addr, port):
         util.sendDict(data, ip_addr, port, self.receivesocket)
@@ -177,18 +178,12 @@ class Server():
         if self.current_round != "VOTE_START":
             return
         # get message
-        message = message_id
-        public_key_idx = self.known_clients.index(self.MY_CLIENTS[client_id].public_key)
-        signing_key = self.MY_CLIENTS[client_id].private_key
+        new_vote_msg = self.MY_CLIENTS[client_id].vote(message_id, vote, self.known_clients)
+        if not util.LRSverify(new_vote_msg["msg_id"], self.known_clients, new_vote_msg["lrs"]):
+            print("Voting: LRS verify failed.")
 
-        lrs = util.LRSsign(signing_key, public_key_idx, message, self.known_clients) # (signing_key, public_key_idx, message, public_key_list)
-        new_message = {
-            'msg_type': "VOTE",
-            'signature': lrs,
-            'msg_id': message_id,
-            'vote': vote,
-        }
-        self.sendtocoordinator(new_message)
+        # lrs = util.LRSsign(signing_key, public_key_idx, message, self.known_clients) # (signing_key, public_key_idx, message, public_key_list)
+        self.sendtocoordinator(new_vote_msg)
 
     def newvoteupdateledger(self, message): # this is the leader server updating the ledger
         new_block = self.MY_LEDGER.logvote(message['vote'])

@@ -97,3 +97,19 @@ class Client():
             signature_list.append(util.elgamalsign(message, self.wallets[i]['private_key'], gen_powered, P))
             pseudonym_list.append(util.modexp(gen_powered, self.wallets[i]['private_key'], P))
         return (signature_list, pseudonym_list)
+
+    def vote(self, msg_id, vote, known_clients):
+        message = msg_id
+        public_key_idx = known_clients.index(self.public_key)
+        signing_key = self.private_key
+
+        print(known_clients)
+
+        lrs = util.LRSsign(signing_key, public_key_idx, message, known_clients) # (signing_key, public_key_idx, message, public_key_list)
+        new_message = {
+            'msg_type': "VOTE",
+            'signature': lrs,
+            'msg_id': msg_id,
+            'vote': vote,
+        }
+        return new_message

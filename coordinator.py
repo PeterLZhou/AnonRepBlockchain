@@ -147,7 +147,7 @@ class Coordinator():
         vote = vote_dict["vote"]
         lrs = vote_dict["signature"]
 
-        # check if duplicate vote using linkable ring signature
+        print("Received vote", vote, "for message", msg_id)
 
         if(len(aggregated_messages) < msg_id or (vote != -1 and vote != 1)):
             # invalid vote, send reply saying this
@@ -194,7 +194,7 @@ class Coordinator():
                 vote_per_wallet = 1
 
         pm = {
-            "msg_type": "WALLET_SPLIT"
+            "msg_type": "WALLET_SPLIT",
             "wallet_delta": vote_per_wallet
         }
 
@@ -281,9 +281,12 @@ class Coordinator():
         for (ip, port) in self.known_servers:
             util.sendDict(pm, ip, port, self.receivesocket)
 
-    def broadcastLedger(self, ledger_dict):
-        or (ip, port) in self.known_servers:
-            util.sendDict(ledger_dict, ip, port, self.receivesocket)
+        self.startNextRound()
+
+    def broadcastLedger(self, ledger_dict, sender_ip, sender_port):
+        for (ip, port) in self.known_servers:
+            if not (ip == sender_ip and port == sender_port):
+                util.sendDict(ledger_dict, ip, port, self.receivesocket)
 
 
     def listenAndCoordinate(self):
@@ -325,4 +328,4 @@ class Coordinator():
             elif new_data['msg_type'] == "LEDGER_UPDATE":
                 if self.current_phase != VOTE:
                     continue
-                self.broadcastLedger(new_data)
+                self.broadcastLedger(new_data, sender_ip, sender_port)
