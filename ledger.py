@@ -31,6 +31,19 @@ class Ledger:
         if 'msg_id' in new_block and 'vote' in new_block:
             self.updatevotes(new_block['msg_id'], new_block['vote'])
 
+    def lognewwallets(self, nym, nym_sig, new_wallet_public_keys):
+        '''processing new wallets, should only be called by lead server
+        '''
+        new_block = {
+            "nym": nym,
+            "nym_sig": nym_sig,
+            "new_wallet_public_keys": new_wallet_public_keys
+        }
+        salt = self.signblock(new_block)
+        new_block['salt'] = salt
+        self.appendblock(new_block)
+        return new_block
+
     def logvote(self, link_ring_sig, msg_id, vote):
         '''processing a vote, should only be called by lead server
         '''

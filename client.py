@@ -37,20 +37,29 @@ class Client():
         print("Client public key: ", self.public_key)
         print("Client private key: ", self.private_key)
 
-    # Called by the server, returns a list of new wallets
+    # Called by the server, returns a list of new wallets and their respective blocks
     # the private keys will be kept by the client, but the public keys will be shared with the server
     def recalculateWallets(self, vote_list, gen_powered):
         new_wallet_list = []
         new_public_keys_list = []
+        new_blocks = []
         prev_reputation = len(self.wallets)
         for nym, value in vote_list:
             for wallet in self.wallets:
+                nym_new_wallets = []
                 if verify_nym(wallet, nym, gen_powered):
                     for i in range(value):
                         new_wallet = self.createwallet()
                         new_wallet_list.append(new_wallet)
                         new_public_keys_list.append(new_wallet.public_key)
-                        # Insert block creation here @Eugine
+                        nym_new_wallets.append(new_wallet.public_key)
+                new_block = {
+                    'nym': nym,
+                    'nym_sig': util.elgamalsign("walletsplit", wallet['private_key'], gen_powered, P),
+                    'new_wallet_public_keys': nym_new_wallets
+                }
+                new_blocks.append(new_block)
+
         self.wallets = new_wallet_list
         return new_public_keys_list
 
