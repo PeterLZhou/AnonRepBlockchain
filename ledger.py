@@ -25,7 +25,7 @@ class Ledger:
         '''
     def appendblock(self, new_block):
         # insert optional verification
-        new_block_hash = util.sha256hash(str(new_block))
+        new_block_hash = util.sha256hash(str(new_block).encode())
         self.BLOCKS[new_block_hash] = new_block
         self.TAIL_BLOCK = new_block_hash
         if 'msg_id' in new_block and 'vote' in new_block:
@@ -59,7 +59,7 @@ class Ledger:
                 prev_char += chr(0)
                 count = 0
             salt = prev_char + chr(count)
-            if verifysignature(self.TAIL_BLOCK, salt):
+            if self.verifysignature(self.TAIL_BLOCK, salt):
                 break
             count += 1
 
@@ -68,8 +68,8 @@ class Ledger:
     def verifysignature(self, prev_hash, salt):
         '''We can make this crypto as easy or as difficult as we want
         '''
-        result = util.sha256hash(prev_hash + salt)
-        if ord(result[0]) < 10:
+        result = util.sha256hash((str(prev_hash) + salt).encode('utf-8'))
+        if result % 10 <= 3:
             return True
         else:
             return False

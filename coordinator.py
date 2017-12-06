@@ -55,11 +55,20 @@ class Coordinator():
     def startNextRound(self):
 
         # finish tasks before current phase ends
-        if self.current_phase == VOTE:
-            # split phase begins here
-            pass
 
         self.current_phase = self.NEXT_PHASE[(self.current_phase + 1) % len(self.NEXT_PHASE)]
+
+        if self.current_phase == SPLIT:
+            # split phase begins here
+            pm = {}
+            pm['msg_type'] = "VOTE_END"
+            for server_ip, server_port in self.known_servers:
+                util.sendDict(pm, server_ip, server_port, self.receivesocket)
+
+            leader_ip, leader_port = self.decideLeader()
+            pm['msg_type'] = "GET_VOTE_COUNT"
+            util.sendDict(pm, leader_ip, leader_port, self.receivesocket)
+
         # more phase handling code
         # most importantly, need to signal each server that new phase has begun
         # finish tasks before new phase starts
@@ -144,14 +153,14 @@ class Coordinator():
     def handleVote(self, vote_dict):
 
         msg_id = vote_dict["msg_id"]
-        vote = vote_dict["vote"]
+        vote = int(vote_dict["vote"])
         lrs = vote_dict["signature"]
 
         print("Received vote", vote, "for message", msg_id)
 
-        if(len(aggregated_messages) < msg_id or (vote != -1 and vote != 1)):
+        if(len(self.aggregated_messages) < int(msg_id) or (vote != -1 and vote != 1)):
             # invalid vote, send reply saying this
-            print("Invalid vote {0} for {1} received from {2}".format(vote, msg_id, sender_nym))
+            print("Invalid vote {0} for {1} received".format(vote, msg_id))
             return
         else:
             vote_dict["msg_type"] = "NEW_VOTE"
@@ -314,7 +323,7 @@ class Coordinator():
                 self.handleClientJoin(new_data)
             elif new_data['msg_type'] == "MESSAGE":
                 self.handleMessage(new_data)
-            elif new_data['msg_type'] == "NEW_VOTE":
+            elif new_data['msg_type'] == "VOTE":
                 self.handleVote(new_data)
             elif new_data['msg_type'] == "NEW_WALLET":
                 if self.current_phase != SERVER_CONFIG:
