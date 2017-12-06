@@ -1,8 +1,8 @@
 1.) Members and the division of work:
-Dibyatanoy Bhattacharjee: Did most of the coordinator code
-Peter Zhou: Did most of the client and server code, most of the crypto functions, and the README
-Kristina Shia: Wrote utility functions, did the slides, and added crypto libraries
-Eugine Szeto: Wrote most of the ledger and blockchain implementation contained in both the server and client code
+Dibyatanoy Bhattacharjee: Did most of the coordinator code and server code
+Peter Zhou: Did some of the client and server code, most of the crypto functions, and the README
+Kristina Shia: Wrote utility functions, did the slides, and added crypto libraries, organized everything and directed members
+Eugine Szeto: Wrote most of the ledger and blockchain implementation contained in both the server and client code and some of the server code
 
 2.) Our system is called BlockRep and is a blockchain-based approach to AnonRep, aimed at solving the problem of intersection attacks (being able to track a one-time pseudonym across multiple rounds of voting). To do this, BlockRep splits every user's reputation into discrete units called wallets, each containing a public W_P and private W_p. Every client contains access to multiple wallets and contains one long-standing public key C_P and one long-standing private key C_p. There are multiple phases inside of BlockRep, described below:
 
