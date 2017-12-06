@@ -44,15 +44,15 @@ class Client():
         new_public_keys_list = []
         new_blocks = []
         prev_reputation = len(self.wallets)
-        for nym, value in vote_list:
+        for nym, value in vote_list.items():
             for wallet in self.wallets:
                 nym_new_wallets = []
-                if verify_nym(wallet, nym, gen_powered):
+                if self.verify_nym(wallet, nym, gen_powered):
                     for i in range(value):
                         new_wallet = self.createwallet()
                         new_wallet_list.append(new_wallet)
-                        new_public_keys_list.append(new_wallet.public_key)
-                        nym_new_wallets.append(new_wallet.public_key)
+                        new_public_keys_list.append(new_wallet["public_key"])
+                        nym_new_wallets.append(new_wallet["public_key"])
                 new_block = {
                     'nym': nym,
                     'nym_sig': util.elgamalsign("walletsplit", wallet['private_key'], gen_powered, P),
@@ -63,10 +63,7 @@ class Client():
         self.wallets = new_wallet_list
         return new_blocks, new_public_keys_list
 
-
-
-
-    def verify_nym(wallet, nym, gen_powered):
+    def verify_nym(self, wallet, nym, gen_powered):
         return util.modexp(gen_powered, wallet['private_key'], P) == nym
 
     # Adds the wallet to the dictionary. Returns the key for the wallet in the dict

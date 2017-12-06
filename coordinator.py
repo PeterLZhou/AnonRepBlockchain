@@ -189,20 +189,21 @@ class Coordinator():
     def aggregateVotes(self, vote_dict):
 
         aggr_votes = vote_dict["dict"]
+        print("Aggregates:", aggr_votes)
         vote_per_wallet = {}
 
         for msg in self.aggregated_messages:
             if str(msg["id"]) in aggr_votes:
-                total_votes = aggr_votes[str(msg["id"])]
+                total_votes = int(aggr_votes[str(msg["id"])])
                 num_nyms = len(msg["nyms"])
 
                 for (idx, nym) in enumerate(msg["nyms"]):
                     wallet_rep = int(total_votes / (num_nyms - idx))
-                    if wallet_rep < -2:
-                        wallet_rep = -2
+                    if wallet_rep < -1:
+                        wallet_rep = -1
                     total_votes = total_votes - wallet_rep
                     if nym in vote_per_wallet:
-                        vote_per_wallet[nym] = max(-2, vote_per_wallet[nym] + wallet_rep)
+                        vote_per_wallet[nym] = max(-1, vote_per_wallet[nym] + wallet_rep)
                     else:
                         vote_per_wallet[nym] = wallet_rep
 
@@ -220,6 +221,7 @@ class Coordinator():
         # forget old pseudonyms
         self.prev_original_reputation_map = self.original_reputation_map
         self.original_reputation_map = {}
+        self.aggregated_messages = []
 
         for (server_ip, server_port) in self.known_servers:
             util.sendDict(pm, server_ip, server_port, self.receivesocket)
@@ -340,7 +342,7 @@ class Coordinator():
             elif new_data['msg_type'] == "VOTE":
                 self.handleVote(new_data)
             elif new_data['msg_type'] == "NEW_WALLET":
-                if self.current_phase != SERVER_CONFIG:
+                if self.current_phase != SERVER_CONFIG and self.current_phase != SPLIT:
                     continue
                 self.registerNewWallet(new_data)
             elif new_data['msg_type'] == "SHUFFLE_END":

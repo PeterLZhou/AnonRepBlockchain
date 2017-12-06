@@ -75,13 +75,14 @@ class Server():
             elif data['msg_type'] == 'NEW_WALLET': # this server has been selected to be the leader
                 self.newwalletupdateledger(data)
             elif data['msg_type'] == 'VOTE_RESULT':
-                vote_list = data['votes'] # a list of objects with structure : {text, id, nyms, votes}
+                vote_list = data['wallet_delta'] # a list of objects with structure : {text, id, nyms, votes}
+                print(vote_list)
                 new_public_keys = self.sendvotestoclients(vote_list)
                 for public_key in new_public_keys:
                     newdict = dict()
                     newdict['msg_type'] = 'NEW_WALLET'
                     newdict['public_key'] = public_key
-                    sendtocoordinator(newdict)
+                    self.sendtocoordinator(newdict)
             elif data['msg_type'] == 'GET_VOTE_COUNT':
                 self.returnvotecount(data)
             elif data['msg_type'] == 'MESSAGE_BROADCAST':
@@ -93,6 +94,7 @@ class Server():
                 print("Server join status: ", data["status"])
             elif data['msg_type'] == 'VOTE_START':
                 self.current_round = 'VOTE_START'
+                self.MY_LEDGER.ALL_VOTES = {}
                 print("Voting round started.")
             elif data['msg_type'] == 'VOTE_END':
                 self.current_round = 'SPLIT'
@@ -214,10 +216,10 @@ class Server():
         }
         self.sendtocoordinator(new_message)
 
-    def sendvotestoclients(self, vote_list, gen_powered):
+    def sendvotestoclients(self, vote_list):
         new_wallet_list = []
-        for client in MY_CLIENTS:
-            new_blocks, new_public_keys = client.recalculateWallets(vote_list, gen_powered)
+        for client_id in self.MY_CLIENTS:
+            new_blocks, new_public_keys = self.MY_CLIENTS[client_id].recalculateWallets(vote_list, self.CURRENT_GEN_POWERED)
             new_wallet_list.extend(new_public_keys)
             # append transactions to ledger
             for new_block in new_blocks:
