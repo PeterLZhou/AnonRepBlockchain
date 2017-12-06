@@ -23,6 +23,9 @@ class Ledger:
                 "msg_id": vote_count
             }
         '''
+    def resetvotes(self):
+        self.ALL_VOTES = {}
+
     def appendblock(self, new_block):
         # insert optional verification
         new_block_hash = util.sha256hash(str(new_block).encode('utf-8'))
