@@ -178,7 +178,7 @@ class Coordinator():
     # to all servers
     def aggregateVotes(self, vote_dict):
 
-        aggr_votes = vote_dict["aggr_votes"]
+        aggr_votes = vote_dict["dict"]
         vote_per_wallet = {}
 
         for msg in self.aggregated_messages:
@@ -196,6 +196,7 @@ class Coordinator():
                     else:
                         vote_per_wallet[nym] = wallet_rep
 
+        print(vote_per_wallet)
         for nym in self.nym_map:
             if nym in vote_per_wallet:
                 vote_per_wallet += 1
